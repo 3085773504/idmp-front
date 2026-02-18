@@ -13,7 +13,7 @@ interface SidebarProps {
 const navItems: NavItem[] = [
   { id: 'dashboard', label: '控制面板', icon: LayoutDashboard },
   { id: 'monitor', label: '监控中心', icon: Gauge },
-  { id: 'ui-library', label: 'UI 系统', icon: Palette }, // 新的组件库菜单
+  { id: 'ui-library', label: 'UI 系统', icon: Palette },
   { id: 'analytics', label: '数据分析', icon: PieChart },
   { id: 'users', label: '客户管理', icon: Users },
   { id: 'products', label: '设备管理', icon: Package },
@@ -30,11 +30,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout }) 
     >
       <div className="p-8 pb-4">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-600/20 relative overflow-hidden">
+          <motion.div 
+            layoutId="app-logo-box"
+            className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-600/20 relative overflow-hidden"
+          >
             <Clock className="w-5 h-5 text-white/30 absolute -right-1 -bottom-1" />
             <Activity className="w-5 h-5 text-white relative z-10" />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-gray-900">iotdb-idmp</h1>
+          </motion.div>
+          <motion.h1 layoutId="app-logo-text" className="text-xl font-bold tracking-tight text-gray-900">iotdb-idmp</motion.h1>
         </div>
       </div>
 
@@ -52,15 +55,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout }) 
             >
               {isActive && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  layoutId="sidebar-active-pill"
+                  className="absolute inset-0 bg-primary-50 rounded-xl -z-10"
                   transition={{ 
                     type: "spring", 
                     stiffness: 500, 
                     damping: 30,
                     mass: 0.5 
                   }}
-                  className="absolute inset-0 bg-primary-50 rounded-xl -z-10"
                 />
               )}
               <span className="relative z-10 flex items-center gap-3">

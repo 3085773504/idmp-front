@@ -34,9 +34,39 @@
         background-color: #f8fafc;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        overflow: hidden; /* 禁止全局 body 滚动 */
+        overflow: hidden;
       }
-      /* Custom Scrollbar for independent scroll areas */
+      
+      /* 全局高级噪点纹理 */
+      .bg-grainy {
+        position: relative;
+      }
+      .bg-grainy::before {
+        content: "";
+        position: fixed;
+        inset: -200%;
+        width: 400%;
+        height: 400%;
+        z-index: 9999;
+        opacity: 0.03;
+        pointer-events: none;
+        background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+        animation: grain 8s steps(10) infinite;
+      }
+
+      @keyframes grain {
+        0%, 100% { transform: translate(0, 0); }
+        10% { transform: translate(-5%, -10%); }
+        20% { transform: translate(-15%, 5%); }
+        30% { transform: translate(7%, -25%); }
+        40% { transform: translate(-5%, 25%); }
+        50% { transform: translate(-15%, 10%); }
+        60% { transform: translate(15%, 0%); }
+        70% { transform: translate(0%, 15%); }
+        80% { transform: translate(3%, 35%); }
+        90% { transform: translate(-10%, 10%); }
+      }
+
       .custom-scrollbar::-webkit-scrollbar {
         width: 6px;
         height: 6px;
@@ -52,7 +82,6 @@
         background: #cbd5e1;
       }
       
-      /* 针对通用内容的滚动条样式 */
       ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
@@ -81,7 +110,7 @@
 }
 </script>
 </head>
-  <body>
+  <body class="bg-grainy">
     <div id="root"></div>
   </body>
 </html>
