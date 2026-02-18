@@ -112,18 +112,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       {/* Left Section */}
       <div className="w-full lg:w-2/5 flex flex-col relative z-10 bg-white min-h-screen">
         
-        {/* REFINED FLOATING BACKGROUND SYSTEM */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
             <FloatingIcon Icon={Activity} initialX="-5%" initialY="10%" size={600} duration={20} delay={0} opacity={0.04} />
             <FloatingIcon Icon={Wifi} initialX="70%" initialY="5%" size={300} duration={15} delay={1} opacity={0.02} />
             <FloatingIcon Icon={Cpu} initialX="10%" initialY="60%" size={400} duration={25} delay={2} opacity={0.02} />
             <FloatingIcon Icon={Database} initialX="60%" initialY="75%" size={500} duration={18} delay={0.5} opacity={0.03} />
-            
-            {/* 渐变遮罩：确保图标不会干扰输入框边缘 */}
             <div className="absolute inset-0 bg-gradient-to-r from-white via-transparent to-white opacity-40" />
         </div>
 
-        {/* Top: Logo with Shared Layout ID */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -147,7 +143,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
         </motion.div>
 
-        {/* Center: Main Form Content */}
+        {/* Center Content */}
         <div className={`flex-1 flex flex-col justify-center py-20 relative z-10 ${horizontalPaddingClasses}`}>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -155,10 +151,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
             className="w-full max-w-[400px] mx-auto lg:mx-0"
           >
-            <div className="mb-10">
+            <div className="mb-10 text-left">
               <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-3">欢迎回来</h1>
               <p className="text-gray-500 text-lg leading-relaxed font-medium">
-                请输入您的详细信息以登录管理控制台。
+                输入您的账号信息以继续。
               </p>
             </div>
 
@@ -178,31 +174,24 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               )}
             </AnimatePresence>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
-                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
-                  <Input
+                <Input
                     id="username"
-                    type="text"
+                    value={username}
+                    onChange={setUsername}
                     label="账号"
                     icon={<UserIcon className="w-5 h-5" />}
-                    placeholder="用户名或电子邮箱"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
                     required
-                    className="group"
-                  />
-                </motion.div>
+                />
 
-                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
-                  <Input
+                <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={setPassword}
                     label="密码"
                     icon={<Lock className="w-5 h-5" />}
-                    placeholder="请输入您的密码"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
                     required
                     rightElement={
                       <button 
@@ -213,16 +202,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                           {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     }
-                  />
-                </motion.div>
+                />
               </div>
 
-              <motion.div 
-                  initial={{ opacity: 0 }} 
-                  animate={{ opacity: 1 }} 
-                  transition={{ delay: 0.5 }}
-                  className="flex items-center justify-between"
-              >
+              <div className="flex items-center justify-between">
                   <Checkbox 
                       label="记住登录状态" 
                       checked={rememberMe} 
@@ -231,38 +214,31 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <a href="#" className="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors">
                       忘记密码？
                   </a>
-              </motion.div>
+              </div>
 
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-                <Button 
+              <Button 
                   type="submit" 
-                  className="w-full h-12 text-lg font-bold shadow-2xl shadow-primary-600/20" 
+                  className="w-full h-14 text-lg font-bold shadow-2xl shadow-primary-600/20" 
                   isLoading={loading}
                   rightIcon={<ArrowRight className="w-5 h-5" />}
-                >
-                  进入工作区
-                </Button>
-              </motion.div>
-
-              <motion.div 
-                  initial={{ opacity: 0 }} 
-                  animate={{ opacity: 1 }} 
-                  transition={{ delay: 0.7 }}
-                  className="pt-4 border-t border-gray-50"
               >
+                  进入工作区
+              </Button>
+
+              <div className="pt-4 border-t border-gray-50">
                   <Button 
                       variant="secondary" 
-                      className="w-full h-12 justify-center border-gray-100 text-gray-600 font-bold bg-gray-50/50" 
+                      className="w-full h-14 justify-center border-gray-100 text-gray-600 font-bold bg-gray-50/50" 
                       leftIcon={<Shield className="w-5 h-5 text-indigo-500" />}
                   >
                       SSO 企业级单点登录
                   </Button>
-              </motion.div>
+              </div>
             </form>
           </motion.div>
         </div>
 
-        {/* Bottom: Quick Fill Helper */}
+        {/* Bottom Helper */}
         <motion.div 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
@@ -277,7 +253,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                  <div className="w-10 h-10 rounded-xl bg-gray-50 group-hover:bg-indigo-50 flex items-center justify-center text-gray-400 group-hover:text-primary-600 transition-colors">
                      <Command className="w-5 h-5"/>
                  </div>
-                 <div className="flex flex-col">
+                 <div className="flex flex-col text-left">
                      <span className="text-sm font-bold text-gray-900">演示账号快速填充</span>
                      <span className="text-xs text-gray-400 font-mono group-hover:text-primary-600/70 transition-colors uppercase">admin / password123</span>
                  </div>
@@ -289,7 +265,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
        </motion.div>
       </div>
 
-      {/* Right Section (Cinematic Carousel) */}
+      {/* Right Carousel */}
       <div className="hidden lg:flex lg:w-3/5 bg-gray-950 relative overflow-hidden items-end p-16">
          <AnimatePresence mode="wait">
             <motion.div 
@@ -301,7 +277,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 className="absolute inset-0 bg-cover bg-center"
                 style={{ backgroundImage: `url(${SLIDES[currentSlide].image})` }}
             >
-                {/* Ken Burns Effect / Subtle Movement */}
                 <motion.div 
                     animate={{ x: [0, -20, 0], y: [0, -10, 0] }}
                     transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
@@ -310,11 +285,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </motion.div>
          </AnimatePresence>
 
-         {/* Multiple Gradient Layers for Deep Cinematic Look */}
          <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent opacity-80" />
          <div className="absolute inset-0 bg-gradient-to-r from-gray-950/40 to-transparent" />
          
-         <div className="relative z-10 w-full max-w-2xl pb-10">
+         <div className="relative z-10 w-full max-w-2xl pb-10 text-left">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={currentSlide}
