@@ -1,18 +1,30 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, DollarSign, ShoppingBag, Activity, Bell, Search, Menu, Plus, UserPlus } from 'lucide-react';
-import Sidebar from '../components/layout/Sidebar';
+import Sidebar, { navItems, findNavItem } from '../components/layout/Sidebar';
+import Header from '../components/layout/Header';
+import NavigationLayout from '../components/layout/NavigationLayout';
+import TabsBar, { Tab } from '../components/layout/TabsBar';
+import BottomNav from '../components/layout/BottomNav';
 import Card from '../components/ui/Card';
 import StatCard from '../components/dashboard/StatCard';
 import OrdersTable from '../components/dashboard/OrdersTable';
 import MonitorCenter from './MonitorCenter';
-import UILibrary from './UILibrary'; // 新页面导入
-import Input from '../components/ui/Input';
-import AnimatedInput from '../components/ui/AnimatedInput';
+import UILibrary from './UILibrary';
 import Button from '../components/ui/Button';
 import { Stat, Order, User } from '../types';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { 
+  Users, 
+  DollarSign, 
+  ShoppingCart, 
+  TrendingUp,
+  MoreHorizontal,
+  Plus,
+  UserPlus,
+  ShoppingBag,
+  Activity
+} from 'lucide-react';
 
 interface DashboardProps {
   user: User;
@@ -46,14 +58,58 @@ const chartData = [
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openTabs, setOpenTabs] = useState<Tab[]>([{ id: 'dashboard', label: '控制面板' }]);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Desktop sidebar collapse
+  const [layoutMode, setLayoutMode] = useState<'sidebar' | 'bottom'>('sidebar'); // Layout mode state
   const [isChartReady, setIsChartReady] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
     const timer = setTimeout(() => setIsChartReady(true), 200);
     return () => clearTimeout(timer);
   }, []);
+
+  const toggleLayoutMode = () => {
+    setLayoutMode(prev => prev === 'sidebar' ? 'bottom' : 'sidebar');
+  };
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    // Ensure tab is in openTabs (should be if clicked, but good for safety)
+    if (!openTabs.find(t => t.id === tabId)) {
+      const item = findNavItem(navItems, tabId);
+      if (item) {
+        setOpenTabs([...openTabs, { id: item.id, label: item.label }]);
+      }
+    }
+  };
+
+  const handleSidebarClick = (tabId: string) => {
+    const item = findNavItem(navItems, tabId);
+    if (item) {
+      if (!openTabs.find(t => t.id === tabId)) {
+        setOpenTabs([...openTabs, { id: item.id, label: item.label }]);
+      }
+      setActiveTab(tabId);
+    }
+  };
+
+  const handleTabClose = (tabId: string) => {
+    // Prevent closing the last tab
+    if (openTabs.length <= 1) return;
+
+    const newTabs = openTabs.filter(t => t.id !== tabId);
+    setOpenTabs(newTabs);
+
+    // If closing active tab, switch to the one before it
+    if (activeTab === tabId) {
+      const index = openTabs.findIndex(t => t.id === tabId);
+      const newActiveTab = newTabs[Math.max(0, index - 1)];
+      setActiveTab(newActiveTab.id);
+    }
+  };
+
+  const currentTitle = findNavItem(navItems, activeTab)?.label || '控制面板';
 
   const renderContent = () => {
     switch (activeTab) {
@@ -157,7 +213,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             <MonitorCenter />
           </motion.div>
         );
-      case 'ui-library': // 新的路由
+      case 'ui-library':
         return (
           <motion.div
             key="ui-library"
@@ -174,6 +230,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           <div className="h-[60vh] flex flex-col items-center justify-center text-gray-400">
              <Activity className="w-16 h-16 mb-4 opacity-20" />
              <p className="text-lg font-medium">功能建设中...</p>
+             <p className="text-sm text-gray-400 mt-2">Page ID: {activeTab}</p>
              <Button variant="ghost" onClick={() => setActiveTab('dashboard')} className="mt-4">返回首页</Button>
           </div>
         );
@@ -181,64 +238,49 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   };
 
   return (
-    <div className="h-screen w-full bg-gray-50 flex overflow-hidden">
-      {/* 侧边栏 */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={onLogout} />
-
-      {/* 主体内容区域 */}
-      <main className="flex-1 flex flex-col min-w-0 h-full relative lg:ml-64 bg-gray-50">
-        
-        {/* 顶部通栏 */}
-        <header className="h-20 shrink-0 bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between px-8 z-30 sticky top-0">
-          <div className="flex items-center gap-4 lg:hidden">
-            <Button variant="ghost" isIconOnly onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <Menu className="w-6 h-6 text-gray-600" />
-            </Button>
-          </div>
-
-          <div className="flex-1 max-w-md hidden md:block">
-            {/* 使用新的 AnimatedInput 替换普通 Input */}
-            <AnimatedInput 
-              value={searchValue}
-              onChange={setSearchValue}
-              placeholder="搜索任意内容..." 
-              icon={<Search className="w-4 h-4 text-gray-400" />} 
-              className="!mb-0"
-              animationType="bubble"
-            />
-          </div>
-
-          <div className="flex items-center gap-5">
-            <Button variant="ghost" isIconOnly shape="circle" className="relative !bg-gray-100/50">
-              <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white ring-1 ring-red-500/20"></span>
-            </Button>
-            
-            <div className="flex items-center gap-3 pl-5 border-l border-gray-100">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-gray-900 leading-tight">{user.name}</p>
-                <p className="text-[11px] text-gray-400 uppercase tracking-widest mt-0.5">Administrator</p>
-              </div>
-              <motion.img 
-                whileHover={{ scale: 1.05 }}
-                src={user.avatar} 
-                className="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-gray-100 cursor-pointer" 
-                alt="user" 
-              />
-            </div>
-          </div>
-        </header>
-
-        {/* 内容滚动区 */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
-          <div className="max-w-7xl mx-auto p-8 lg:p-10">
-            <AnimatePresence mode="wait">
-              {renderContent()}
-            </AnimatePresence>
-          </div>
-        </div>
-      </main>
-    </div>
+    <NavigationLayout
+      layoutMode={layoutMode}
+      isSidebarCollapsed={isSidebarCollapsed}
+      sidebar={
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={handleSidebarClick} 
+          onLogout={onLogout} 
+          isCollapsed={isSidebarCollapsed}
+          onCollapse={setIsSidebarCollapsed}
+        />
+      }
+      bottomNav={
+        <BottomNav 
+          activeTab={activeTab} 
+          setActiveTab={handleSidebarClick} 
+        />
+      }
+      header={
+        <Header 
+          user={user} 
+          sidebarOpen={sidebarOpen} 
+          setSidebarOpen={setSidebarOpen}
+          title={currentTitle}
+          layoutMode={layoutMode}
+          onToggleLayout={toggleLayoutMode}
+        />
+      }
+      tabs={
+        <TabsBar 
+          tabs={openTabs}
+          activeTab={activeTab}
+          onTabClick={handleTabChange}
+          onTabClose={handleTabClose}
+        />
+      }
+    >
+      <div className="max-w-7xl mx-auto p-8 lg:p-10">
+        <AnimatePresence mode="wait">
+          {renderContent()}
+        </AnimatePresence>
+      </div>
+    </NavigationLayout>
   );
 };
 

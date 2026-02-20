@@ -55,6 +55,9 @@ import SplitPane from '../components/layout/SplitPane';
 import Masonry from '../components/layout/Masonry';
 import { BentoGrid, BentoItem } from '../components/layout/BentoGrid';
 import { Sidebar, SidebarHeader, SidebarContent, SidebarGroup, SidebarItem, SidebarFooter } from '../components/ui/Sidebar';
+import NavigationLayout from '../components/layout/NavigationLayout';
+import AppSidebar from '../components/layout/Sidebar';
+import Header from '../components/layout/Header';
 import { useToast } from '../components/ui/Toast';
 import Tour, { TourStep } from '../components/ui/Tour';
 import Steps from '../components/ui/Steps'; // Import Steps
@@ -229,6 +232,12 @@ const UILibrary: React.FC = () => {
   // Sidebar Demo State
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeSidebarItem, setActiveSidebarItem] = useState('home');
+
+  // Navigation Layout Demo State
+  const [demoSidebarOpen, setDemoSidebarOpen] = useState(false);
+  const [demoActiveTab, setDemoActiveTab] = useState('dashboard');
+  const [demoIsCollapsed, setDemoIsCollapsed] = useState(false);
+  const demoUser = { name: 'Demo User', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80', role: 'admin' };
 
   // Tree Demo State
   const [selectedTreeNode, setSelectedTreeNode] = useState('Button.tsx');
@@ -759,7 +768,74 @@ const UILibrary: React.FC = () => {
                 </div>
             </section>
 
-            {/* 2. Split Pane */}
+            {/* 2. Navigation Layout Demo */}
+            <section className="space-y-6">
+                <div className="flex items-center gap-2">
+                    <div className="w-1 h-5 bg-gradient-to-b from-purple-500 to-pink-600 rounded-full"></div>
+                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">完整布局演示 (Full Navigation Layout)</h3>
+                </div>
+                <div className="h-[600px] w-full border border-gray-200 rounded-3xl overflow-hidden shadow-xl relative">
+                    <div className="absolute inset-0 bg-gray-50">
+                        <NavigationLayout
+                            className="h-full absolute inset-0"
+                            isSidebarCollapsed={demoIsCollapsed}
+                            sidebar={
+                                <AppSidebar 
+                                    activeTab={demoActiveTab} 
+                                    setActiveTab={setDemoActiveTab} 
+                                    onLogout={() => toast.info("Logout clicked in demo")} 
+                                    className="!absolute !h-full !z-40"
+                                    isCollapsed={demoIsCollapsed}
+                                    onCollapse={setDemoIsCollapsed}
+                                />
+                            }
+                            header={
+                                <Header 
+                                    user={demoUser} 
+                                    sidebarOpen={demoSidebarOpen} 
+                                    setSidebarOpen={setDemoSidebarOpen}
+                                    title="控制面板"
+                                />
+                            }
+                        >
+                            <div className="p-8">
+                                <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-4">欢迎使用布局组件</h2>
+                                    <p className="text-gray-500 leading-relaxed mb-6">
+                                        这是一个完整的 <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-700">NavigationLayout</code> 组件演示。
+                                        它集成了 <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-700">Sidebar</code> 和 <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-700">Header</code>，
+                                        并自动处理了响应式布局和滚动区域。
+                                    </p>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                                            <div className="text-indigo-600 font-bold mb-1">左侧菜单</div>
+                                            <div className="text-xs text-indigo-400">固定宽度，支持折叠</div>
+                                        </div>
+                                        <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
+                                            <div className="text-purple-600 font-bold mb-1">顶部导航</div>
+                                            <div className="text-xs text-purple-400">包含搜索与用户信息</div>
+                                        </div>
+                                        <div className="p-4 bg-green-50 rounded-xl border border-green-100">
+                                            <div className="text-green-600 font-bold mb-1">内容区域</div>
+                                            <div className="text-xs text-green-400">独立滚动，自适应高度</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6">
+                                    {Array.from({ length: 4 }).map((_, i) => (
+                                        <div key={i} className="h-32 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center text-gray-300">
+                                            Content Block {i + 1}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </NavigationLayout>
+                    </div>
+                </div>
+            </section>
+
+            {/* 3. Split Pane */}
             <section className="space-y-6">
                 <div className="flex items-center gap-2">
                     <div className="w-1 h-5 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full"></div>
