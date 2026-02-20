@@ -106,17 +106,19 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, is
 
     return (
       <div key={item.id} className="mb-1 relative">
-        <button
+        <motion.button
+          whileHover={{ scale: isCollapsed ? 1.05 : 1 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => handleItemClick(item)}
-          onMouseEnter={(e) => handleMouseEnter(e, item)}
+          onMouseEnter={(e: any) => handleMouseEnter(e, item)}
           onMouseLeave={handleMouseLeave}
           className={`
-            w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative
+            w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors duration-200 group relative isolate
             ${isActive 
-              ? 'bg-primary-50 text-primary-600 shadow-sm shadow-primary-100' 
+              ? 'text-primary-700' 
               : isChildActive
-                ? 'bg-gray-50 text-primary-600'
-                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                ? 'text-primary-600'
+                : 'text-gray-500 hover:text-gray-900'
             }
             ${isCollapsed ? 'justify-center !px-0' : ''} 
           `}
@@ -124,7 +126,19 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, is
             paddingLeft: isCollapsed ? 0 : `${0.75 + depth * 1}rem` 
           }}
         >
-          <div className={`relative flex items-center justify-center transition-colors ${isActive || isChildActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-600'}`}>
+          {/* Active Background Pill */}
+          {(isActive || isChildActive) && (
+            <motion.div
+              layoutId="sidebar-active-bg"
+              className="absolute inset-0 bg-primary-50 rounded-xl -z-10"
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            />
+          )}
+
+          <motion.div 
+            whileHover={{ scale: 1.1 }}
+            className={`relative flex items-center justify-center transition-colors ${isActive || isChildActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-600'}`}
+          >
             <item.icon className="w-5 h-5" />
             {isActive && (
               <motion.div
@@ -133,7 +147,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, is
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               />
             )}
-          </div>
+          </motion.div>
           
           {!isCollapsed && (
             <>
@@ -141,13 +155,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, is
                 {item.label}
               </span>
               {hasChildren && (
-                <span className="text-gray-400">
-                  {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                </span>
+                <motion.span 
+                  animate={{ rotate: isExpanded ? 90 : 0 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  className="text-gray-400"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </motion.span>
               )}
             </>
           )}
-        </button>
+        </motion.button>
 
         {/* Render Children (Inline for Expanded Sidebar) */}
         <AnimatePresence>
@@ -226,7 +244,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onLogout, is
       <AnimatePresence>
         {isCollapsed && hoveredMenuId && (
           (() => {
-            const item = navItems.find(i => i.id === hoveredMenuId);
+            const item = findNavItem(navItems, hoveredMenuId);
             if (!item) return null;
             
             const hasChildren = item.children && item.children.length > 0;
