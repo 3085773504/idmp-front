@@ -132,8 +132,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               <Card className="lg:col-span-2 h-[450px] flex flex-col">
                 <div className="flex items-center justify-between mb-8">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">营收概览</h3>
-                    <p className="text-sm text-gray-500">月度时序数据分析</p>
+                    <h3 className="text-lg font-bold text-gray-900">设备在线趋势</h3>
+                    <p className="text-sm text-gray-500">全网设备活跃度时序分析</p>
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" variant="secondary">按周</Button>
@@ -192,16 +192,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             <Card className="overflow-hidden p-0">
               <div className="p-6 border-b border-gray-50 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">最新工单</h3>
+                  <h3 className="text-lg font-bold text-gray-900">最新告警事件</h3>
                   <p className="text-sm text-gray-500 mt-0.5">近期设备异常及处理记录</p>
                 </div>
-                <Button variant="secondary" size="sm">全部工单</Button>
+                <Button variant="secondary" size="sm">全部事件</Button>
               </div>
               <OrdersTable orders={orders} />
             </Card>
           </motion.div>
         );
-      case 'monitor':
+      case 'dashboards': // Map the new 'dashboards' ID to MonitorCenter for now, or create a new one later
         return (
           <motion.div
             key="monitor-center"
@@ -226,13 +226,28 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           </motion.div>
         );
       default:
+        // Generic fallback for all other new menu items
         return (
-          <div className="h-[60vh] flex flex-col items-center justify-center text-gray-400">
-             <Activity className="w-16 h-16 mb-4 opacity-20" />
-             <p className="text-lg font-medium">功能建设中...</p>
-             <p className="text-sm text-gray-400 mt-2">Page ID: {activeTab}</p>
-             <Button variant="ghost" onClick={() => setActiveTab('dashboard')} className="mt-4">返回首页</Button>
-          </div>
+          <motion.div 
+            key={activeTab}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="h-[70vh] flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200"
+          >
+             <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-6">
+               <Activity className="w-10 h-10 text-indigo-300" />
+             </div>
+             <h2 className="text-2xl font-bold text-gray-900 mb-2">{currentTitle}</h2>
+             <p className="text-gray-500 mb-6 text-center max-w-md">
+               该功能模块正在开发中。您可以点击下方按钮返回控制面板，或在左侧菜单选择其他功能。
+             </p>
+             <div className="flex items-center gap-2 text-xs font-mono bg-gray-100 px-3 py-1.5 rounded-lg text-gray-500 mb-8">
+               <span>Route ID:</span>
+               <span className="font-bold text-indigo-600">{activeTab}</span>
+             </div>
+             <Button variant="primary" onClick={() => handleTabChange('dashboard')}>返回控制面板</Button>
+          </motion.div>
         );
     }
   };

@@ -3,18 +3,33 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
+  MonitorPlay,
+  Layout,
+  Sparkles, 
+  MessageSquare, 
+  Lightbulb,
+  TrendingUp, 
+  Bell,
+  AlertTriangle, 
+  History,
+  Database, 
+  FolderTree, 
+  Tags,
+  ShieldCheck,
+  Zap, 
+  Box, 
+  Archive, 
   Activity, 
-  PieChart, 
+  Server,
   Settings, 
   Users, 
-  FileText, 
-  Bell, 
+  Share2,
+  Eye,
+  Puzzle,
   LogOut, 
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  Shield,
-  Database
+  ChevronDown
 } from 'lucide-react';
 
 export interface NavItem {
@@ -25,19 +40,64 @@ export interface NavItem {
 }
 
 export const navItems: NavItem[] = [
-  { id: 'dashboard', label: '控制面板', icon: LayoutDashboard },
-  { id: 'monitor', label: '监控中心', icon: Activity },
-  { id: 'analysis', label: '分析页', icon: PieChart },
-  { id: 'orders', label: '订单管理', icon: FileText },
-  { id: 'notifications', label: '消息通知', icon: Bell },
+  { 
+    id: 'visual-board', 
+    label: '可视化看板', 
+    icon: LayoutDashboard,
+    children: [
+      { id: 'dashboard', label: '全局控制台', icon: MonitorPlay },
+      { id: 'dashboards', label: '自定义仪表板', icon: Layout },
+    ]
+  },
+  { 
+    id: 'ai-apps', 
+    label: 'AI 智能应用', 
+    icon: Sparkles,
+    children: [
+      { id: 'ai-chat', label: '数据智能问答', icon: MessageSquare },
+      { id: 'ai-insight', label: '数据洞察与推荐', icon: Lightbulb },
+      { id: 'ai-forecast', label: '多变量时序预测', icon: TrendingUp },
+    ]
+  },
+  { 
+    id: 'events', 
+    label: '事件与告警', 
+    icon: Bell,
+    children: [
+      { id: 'event-rules', label: '事件检测与规则', icon: AlertTriangle },
+      { id: 'event-history', label: '告警历史分析', icon: History },
+    ]
+  },
+  { 
+    id: 'data-center', 
+    label: '时序数据中心', 
+    icon: Database,
+    children: [
+      { id: 'data-catalog', label: '数据目录与资产', icon: FolderTree },
+      { id: 'data-context', label: '数据情景化配置', icon: Tags },
+      { id: 'data-quality', label: '数据质量治理', icon: ShieldCheck },
+      { id: 'realtime-task', label: '实时分析任务', icon: Zap },
+    ]
+  },
+  { 
+    id: 'model-studio', 
+    label: 'AI 模型工坊', 
+    icon: Box,
+    children: [
+      { id: 'model-hub', label: '模型仓库与版本', icon: Archive },
+      { id: 'model-train', label: '模型训练与评测', icon: Activity },
+      { id: 'model-deploy', label: '模型部署与服务', icon: Server },
+    ]
+  },
   { 
     id: 'system', 
-    label: '系统管理', 
+    label: '系统与平台管理', 
     icon: Settings,
     children: [
-      { id: 'users', label: '用户管理', icon: Users },
-      { id: 'roles', label: '角色管理', icon: Shield },
-      { id: 'database', label: '数据备份', icon: Database },
+      { id: 'users', label: '用户与权限管理', icon: Users },
+      { id: 'data-service', label: '数据服务与分发', icon: Share2 },
+      { id: 'observability', label: '可观测性与运维', icon: Eye },
+      { id: 'integration', label: '兼容性与扩展接入', icon: Puzzle },
     ]
   },
 ];
