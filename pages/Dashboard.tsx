@@ -11,6 +11,7 @@ import StatCard from '../components/dashboard/StatCard';
 import OrdersTable from '../components/dashboard/OrdersTable';
 import MonitorCenter from './MonitorCenter';
 import UILibrary from './UILibrary';
+import DataCatalog from './DataCatalog';
 import Button from '../components/ui/Button';
 import { Stat, Order, User } from '../types';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -213,6 +214,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             <MonitorCenter />
           </motion.div>
         );
+      case 'data-catalog':
+        return (
+          <motion.div
+            key="data-catalog"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="h-full"
+          >
+            <DataCatalog />
+          </motion.div>
+        );
       case 'ui-library':
         return (
           <motion.div
@@ -290,7 +304,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         />
       }
     >
-      <div className="max-w-7xl mx-auto p-8 lg:p-10">
+      <div className="max-w-7xl mx-auto p-4 lg:p-8 h-full">
         <AnimatePresence mode="wait">
           {renderContent()}
         </AnimatePresence>

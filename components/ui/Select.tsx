@@ -14,12 +14,13 @@ interface SelectProps {
   onChange: (value: string) => void;
   placeholder?: string;
   label?: string;
+  className?: string;
 }
 
-const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder = "请选择...", label }) => {
+const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder = "请选择...", label, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const selectedOption = options.find(opt => opt.value === value);
+  const selectedOption = options?.find(opt => opt.value === value);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -32,7 +33,7 @@ const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder =
   }, []);
 
   return (
-    <div className="w-full relative" ref={containerRef}>
+    <div className={`w-full relative ${className}`} ref={containerRef}>
       {label && <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">{label}</label>}
       
       <motion.button
@@ -70,7 +71,7 @@ const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder =
             }}
             className="absolute z-50 w-full bg-white border border-gray-100 rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] py-1.5 overflow-hidden origin-top"
           >
-            {options.map((option) => {
+            {options?.map((option) => {
               const isSelected = value === option.value;
               return (
                 <li key={option.value}>
