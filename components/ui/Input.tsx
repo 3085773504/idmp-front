@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BaseProps } from '../../types';
 
-interface InputProps extends BaseProps, Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+interface InputProps extends BaseProps, Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size'> {
   label?: string;
   error?: string;
   icon?: React.ReactNode;
@@ -11,6 +11,7 @@ interface InputProps extends BaseProps, Omit<React.InputHTMLAttributes<HTMLInput
   shake?: boolean;
   value: string;
   onChange: (value: string) => void;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const Input: React.FC<InputProps> = ({ 
@@ -27,6 +28,7 @@ const Input: React.FC<InputProps> = ({
   onChange,
   type = "text",
   placeholder,
+  size = 'md',
   ...props 
 }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -54,6 +56,48 @@ const Input: React.FC<InputProps> = ({
   // 将内容拆分为字符数组
   const characters = value.split('');
 
+  const sizeClasses = {
+    sm: 'h-9 text-sm rounded-lg',
+    md: 'h-14 text-base rounded-2xl',
+    lg: 'h-16 text-lg rounded-2xl',
+  };
+
+  const iconSizeClasses = {
+    sm: 'left-3',
+    md: 'left-4',
+    lg: 'left-5',
+  };
+
+  const paddingLeftClasses = {
+    sm: 'pl-9',
+    md: 'pl-11',
+    lg: 'pl-12',
+  };
+
+  const paddingRightClasses = {
+    sm: 'pr-9',
+    md: 'pr-12',
+    lg: 'pr-14',
+  };
+
+  const defaultPaddingLeft = {
+    sm: 'pl-3',
+    md: 'pl-4',
+    lg: 'pl-5',
+  };
+
+  const defaultPaddingRight = {
+    sm: 'pr-3',
+    md: 'pr-4',
+    lg: 'pr-5',
+  };
+
+  const textSizeClasses = {
+    sm: 'text-sm',
+    md: 'text-base',
+    lg: 'text-lg',
+  };
+
   return (
     <div className={`w-full ${className}`}>
       <motion.div 
@@ -67,7 +111,7 @@ const Input: React.FC<InputProps> = ({
       >
         {/* 背景与边框 */}
         <motion.div
-          className="absolute inset-0 rounded-2xl pointer-events-none"
+          className={`absolute inset-0 pointer-events-none ${size === 'sm' ? 'rounded-lg' : 'rounded-2xl'}`}
           initial={false}
           animate={{
             backgroundColor: isFocused ? '#ffffff' : '#f8fafc',
@@ -86,7 +130,7 @@ const Input: React.FC<InputProps> = ({
           transition={{ duration: 0.2 }}
         />
 
-        <div className="relative flex items-center z-10 h-14 overflow-hidden">
+        <div className={`relative flex items-center z-10 overflow-hidden ${sizeClasses[size]}`}>
           {/* 左侧图标 */}
           {icon && (
             <motion.div 
@@ -94,7 +138,7 @@ const Input: React.FC<InputProps> = ({
                 color: isFocused ? '#4f46e5' : '#94a3b8',
                 scale: isFocused ? 1.1 : 1
               }}
-              className="absolute left-4 transition-colors duration-200 pointer-events-none"
+              className={`absolute ${iconSizeClasses[size]} transition-colors duration-200 pointer-events-none`}
             >
               {icon}
             </motion.div>
@@ -108,10 +152,20 @@ const Input: React.FC<InputProps> = ({
                 initial={{ opacity: 0, x: -5 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
-                className={`absolute text-base font-bold text-gray-400 pointer-events-none ${icon ? 'left-11' : 'left-4'}`}
+                className={`absolute font-bold text-gray-400 pointer-events-none ${icon ? paddingLeftClasses[size] : defaultPaddingLeft[size]}`}
               >
                 {label}
               </motion.label>
+            )}
+            {showLabel && !label && placeholder && (
+              <motion.span
+                initial={{ opacity: 0, x: -5 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+                className={`absolute font-medium text-gray-400 pointer-events-none ${icon ? paddingLeftClasses[size] : defaultPaddingLeft[size]}`}
+              >
+                {placeholder}
+              </motion.span>
             )}
           </AnimatePresence>
 
@@ -119,12 +173,12 @@ const Input: React.FC<InputProps> = ({
           <div 
             className={`
               absolute inset-0 flex items-center pointer-events-none whitespace-pre
-              ${icon ? 'pl-11' : 'pl-4'}
-              ${rightElement ? 'pr-12' : 'pr-4'}
+              ${icon ? paddingLeftClasses[size] : defaultPaddingLeft[size]}
+              ${rightElement ? paddingRightClasses[size] : defaultPaddingRight[size]}
             `}
             aria-hidden="true"
           >
-            <div className="flex items-center h-full w-full overflow-hidden text-base font-bold text-gray-900">
+            <div className={`flex items-center h-full w-full overflow-hidden font-bold text-gray-900 ${textSizeClasses[size]}`}>
                <AnimatePresence mode="popLayout" initial={false}>
                  {characters.map((char, index) => (
                    <motion.span
@@ -165,11 +219,11 @@ const Input: React.FC<InputProps> = ({
             onFocus={handleFocus}
             onBlur={handleBlur}
             className={`
-              w-full h-full bg-transparent rounded-2xl px-4 
+              w-full h-full bg-transparent
               text-transparent caret-indigo-600 focus:outline-none 
-              font-bold text-base relative z-20
-              ${icon ? 'pl-11' : 'pl-4'}
-              ${rightElement ? 'pr-12' : 'pr-4'}
+              font-bold relative z-20 ${textSizeClasses[size]}
+              ${icon ? paddingLeftClasses[size] : defaultPaddingLeft[size]}
+              ${rightElement ? paddingRightClasses[size] : defaultPaddingRight[size]}
             `}
             style={{ 
                 textShadow: '0 0 0 transparent', // 隐藏真实文字

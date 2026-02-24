@@ -170,13 +170,13 @@ const TreeItem: React.FC<TreeItemProps> = ({
 
       if (variant === 'timeseries') {
           return `${base} py-1.5 pr-2 font-mono text-xs tracking-tight
-            ${isSelected ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}
+            ${isSelected ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}
           `;
       }
       
       return `${base} py-1.5 pr-2 
         ${isSelected ? 'bg-primary-50 text-primary-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}
-        ${isFocused && !isSelected ? 'ring-1 ring-primary-200 bg-gray-50' : ''}
+        ${isFocused && !isSelected ? 'bg-gray-50' : ''}
       `;
   }, [variant, isSelected, isFocused]);
 
@@ -191,7 +191,7 @@ const TreeItem: React.FC<TreeItemProps> = ({
     <div className="select-none relative">
       <motion.div
         layout="position"
-        whileTap={{ scale: 0.98, backgroundColor: variant === 'navigation' ? "rgba(229, 231, 235, 0.5)" : "rgba(241, 245, 249, 0.8)" }}
+        whileTap={{ scale: 0.98 }}
         onClick={() => onSelect?.(node)}
         className={containerClasses}
         style={{ paddingLeft: `${paddingLeft}px` }}
@@ -266,18 +266,6 @@ const TreeItem: React.FC<TreeItemProps> = ({
             exit="hidden"
             className="overflow-hidden relative"
           >
-            {/* Guide Line Logic */}
-            {variant !== 'navigation' && (
-                <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "100%" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`absolute top-0 bottom-2 ${guideLineClass}`}
-                style={{ left: `${paddingLeft + guideLineOffset}px` }} 
-                />
-            )}
-
             {node.children!.map((child) => (
               <motion.div key={child.id} variants={itemVariants}>
                 <TreeItem

@@ -3,12 +3,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BaseProps } from '../../types';
 
-interface AnimatedInputProps extends BaseProps, Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+interface AnimatedInputProps extends BaseProps, Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size'> {
   label?: string;
   value: string;
   onChange: (value: string) => void;
   icon?: React.ReactNode;
   animationType?: 'bubble' | 'ticker'; // bubble for text, ticker for numbers
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const AnimatedInput: React.FC<AnimatedInputProps> = ({ 
@@ -18,6 +19,7 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
   icon, 
   className = '', 
   animationType = 'bubble',
+  size = 'md',
   placeholder,
   id,
   onFocus, 
@@ -71,6 +73,24 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
 
   const activeVariants = animationType === 'ticker' ? tickerVariants : bubbleVariants;
 
+  const sizeClasses = {
+    sm: 'min-h-[36px] px-3 py-2 text-sm rounded-lg',
+    md: 'min-h-[48px] px-4 py-3 text-base rounded-xl',
+    lg: 'min-h-[56px] px-5 py-4 text-lg rounded-2xl',
+  };
+
+  const iconSizeClasses = {
+    sm: 'left-3',
+    md: 'left-4',
+    lg: 'left-5',
+  };
+
+  const paddingLeftClasses = {
+    sm: 'pl-9',
+    md: 'pl-11',
+    lg: 'pl-12',
+  };
+
   return (
     <div className={`w-full ${className}`}>
       {label && <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">{label}</label>}
@@ -83,7 +103,7 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
       >
         {/* Container Background & Border */}
         <motion.div
-          className="absolute inset-0 rounded-xl pointer-events-none"
+          className={`absolute inset-0 pointer-events-none ${size === 'sm' ? 'rounded-lg' : size === 'lg' ? 'rounded-2xl' : 'rounded-xl'}`}
           initial={false}
           animate={{
             backgroundColor: isFocused ? '#ffffff' : '#f8fafc',
@@ -96,11 +116,11 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
           transition={{ duration: 0.2 }}
         />
 
-        <div className="relative flex items-center z-10 min-h-[48px]">
+        <div className={`relative flex items-center z-10 ${size === 'sm' ? 'min-h-[36px]' : size === 'lg' ? 'min-h-[56px]' : 'min-h-[48px]'}`}>
           {icon && (
             <motion.div 
               animate={{ color: isFocused ? '#4f46e5' : '#94a3b8' }}
-              className="absolute left-4 transition-colors duration-200 z-20 pointer-events-none"
+              className={`absolute ${iconSizeClasses[size]} transition-colors duration-200 z-20 pointer-events-none`}
             >
               {icon}
             </motion.div>
@@ -114,8 +134,8 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
           <div 
             className={`
               absolute inset-0 flex items-center overflow-hidden
-              px-4 py-3 text-gray-900 font-medium
-              ${icon ? 'pl-11' : ''}
+              text-gray-900 font-medium ${sizeClasses[size]}
+              ${icon ? paddingLeftClasses[size] : ''}
             `}
             aria-hidden="true"
           >
@@ -157,10 +177,9 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
             onFocus={handleFocus}
             onBlur={handleBlur}
             className={`
-              w-full bg-transparent rounded-xl px-4 py-3 
-              text-transparent caret-indigo-600 font-medium
-              focus:outline-none relative z-10
-              ${icon ? 'pl-11' : ''}
+              w-full bg-transparent text-transparent caret-indigo-600 font-medium
+              focus:outline-none relative z-10 ${sizeClasses[size]}
+              ${icon ? paddingLeftClasses[size] : ''}
             `}
             style={{ 
                 // Ensure browser styling matches the mirror layer exactly

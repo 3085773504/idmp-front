@@ -15,12 +15,25 @@ interface SelectProps {
   placeholder?: string;
   label?: string;
   className?: string;
+  size?: 'sm' | 'md' | 'lg';
 }
 
-const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder = "请选择...", label, className = "" }) => {
+const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder = "请选择...", label, className = "", size = "md" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedOption = options?.find(opt => opt.value === value);
+
+  const sizeClasses = {
+    sm: 'px-3 py-2 text-sm rounded-lg min-h-[36px]',
+    md: 'px-4 py-3 rounded-xl min-h-[48px]',
+    lg: 'px-5 py-4 rounded-2xl min-h-[56px]',
+  };
+
+  const dropdownSizeClasses = {
+    sm: 'px-3 py-2 text-sm',
+    md: 'px-4 py-3 text-sm',
+    lg: 'px-5 py-4 text-base',
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -40,7 +53,8 @@ const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder =
         whileTap={{ scale: 0.985 }}
         onClick={() => setIsOpen(!isOpen)}
         className={`
-          w-full flex items-center justify-between px-4 py-3 bg-white border rounded-xl text-left transition-all duration-300 outline-none
+          w-full flex items-center justify-between bg-white border text-left transition-all duration-300 outline-none
+          ${sizeClasses[size]}
           ${isOpen 
             ? 'border-primary-500 ring-4 ring-primary-500/10 shadow-sm' 
             : 'border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md'}
@@ -82,7 +96,8 @@ const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder =
                       setIsOpen(false);
                     }}
                     className={`
-                      w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition-all duration-200
+                      w-full flex items-center justify-between font-medium transition-all duration-200
+                      ${dropdownSizeClasses[size]}
                       ${isSelected 
                         ? 'bg-primary-50 text-primary-600' 
                         : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}
