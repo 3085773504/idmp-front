@@ -23,15 +23,9 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   const y = useMotionValue(0);
 
   useEffect(() => {
-    // Initial position: Bottom Center
-    const { innerWidth, innerHeight } = window;
-    const initialWidth = navItems.length * 50 + 20; 
-    const initialX = (innerWidth - initialWidth) / 2;
-    const initialY = innerHeight - 100;
-    
-    x.set(initialX);
-    y.set(initialY);
-    // Default placement is top (popping up) because we are at bottom
+    // Reset position when component mounts (relies on flex centering from parent)
+    x.set(0);
+    y.set(0);
     setPlacement('top');
   }, []);
 
@@ -126,126 +120,123 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   };
 
   return (
-    <div ref={containerRef} className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      <motion.div
-        ref={navRef}
-        drag
-        dragMomentum={false}
-        dragElastic={0.1}
-        dragConstraints={containerRef}
-        onDrag={handleDrag}
-        animate={controls}
-        style={{ x, y }}
+    <motion.div
+      ref={navRef}
+      drag
+      dragMomentum={false}
+      dragElastic={0.1}
+      onDrag={handleDrag}
+      animate={controls}
+      style={{ x, y }}
+      layout
+      transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      className="pointer-events-auto cursor-grab active:cursor-grabbing"
+    >
+      <motion.nav
         layout
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="absolute top-0 left-0 pointer-events-auto cursor-grab active:cursor-grabbing"
+        className={`bg-white/90 backdrop-blur-xl border border-gray-200/50 shadow-2xl shadow-gray-200/50 rounded-[2rem] p-2 flex items-center gap-2 ${orientation === 'vertical' ? 'flex-col' : 'flex-row'}`}
       >
-        <motion.nav
-          layout
-          transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className={`bg-white/90 backdrop-blur-xl border border-gray-200/50 shadow-2xl shadow-gray-200/50 rounded-[2rem] p-2 flex items-center gap-2 ${orientation === 'vertical' ? 'flex-col' : 'flex-row'}`}
-        >
-          {navItems.map((item) => {
-            const isActive = activeTab === item.id;
-            const hasChildren = item.children && item.children.length > 0;
-            const isChildActive = hasChildren && item.children?.some(child => child.id === activeTab);
-            const isOpen = popupMenuId === item.id;
-            
-            return (
-              <div 
-                key={item.id} 
-                className="relative group"
-                onMouseEnter={() => {
-                   if (hasChildren) setPopupMenuId(item.id);
-                }}
-                onMouseLeave={() => {
-                   setPopupMenuId(null);
-                }}
+        {navItems.map((item) => {
+          const isActive = activeTab === item.id;
+          const hasChildren = item.children && item.children.length > 0;
+          const isChildActive = hasChildren && item.children?.some(child => child.id === activeTab);
+          const isOpen = popupMenuId === item.id;
+          
+          return (
+            <div 
+              key={item.id} 
+              className="relative group"
+              onMouseEnter={() => {
+                 if (hasChildren) setPopupMenuId(item.id);
+              }}
+              onMouseLeave={() => {
+                 setPopupMenuId(null);
+              }}
+            >
+              <motion.button
+                layout
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                onClick={() => handleItemClick(item)}
+                className="relative flex flex-col items-center justify-center w-12 h-12 rounded-full shrink-0"
               >
-                <motion.button
-                  layout
-                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  onClick={() => handleItemClick(item)}
-                  className="relative flex flex-col items-center justify-center w-12 h-12 rounded-full shrink-0"
-                >
-                  {(isActive || isChildActive) && (
-                    <motion.div
-                      layoutId="bottom-nav-active"
-                      className="absolute inset-0 bg-primary-500 rounded-full"
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    />
-                  )}
-                  
-                  <span className="relative z-10">
-                    <item.icon 
-                      className={`w-5 h-5 transition-colors duration-200 ${
-                        (isActive || isChildActive) ? 'text-white' : 'text-gray-500 group-hover:text-primary-600'
-                      }`} 
-                    />
+                {(isActive || isChildActive) && (
+                  <motion.div
+                    layoutId="bottom-nav-active"
+                    className="absolute inset-0 bg-primary-500 rounded-full"
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  />
+                )}
+                
+                <span className="relative z-10">
+                  <item.icon 
+                    className={`w-5 h-5 transition-colors duration-200 ${
+                      (isActive || isChildActive) ? 'text-white' : 'text-gray-500 group-hover:text-primary-600'
+                    }`} 
+                  />
+                </span>
+                
+                {/* Indicator for children */}
+                {hasChildren && (
+                  <span className={`absolute bottom-2 w-1 h-1 rounded-full ${
+                    (isActive || isChildActive) ? 'bg-white/50' : 'bg-gray-400'
+                  }`} />
+                )}
+                
+                {/* Tooltip - Always show on hover unless menu is open */}
+                {!isOpen && (
+                  <span className={`
+                    absolute px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20
+                    ${getTooltipClasses()}
+                  `}>
+                    {item.label}
                   </span>
-                  
-                  {/* Indicator for children */}
-                  {hasChildren && (
-                    <span className={`absolute bottom-2 w-1 h-1 rounded-full ${
-                      (isActive || isChildActive) ? 'bg-white/50' : 'bg-gray-400'
-                    }`} />
-                  )}
-                  
-                  {/* Tooltip - Always show on hover unless menu is open */}
-                  {!isOpen && (
-                    <span className={`
-                      absolute px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20
-                      ${getTooltipClasses()}
-                    `}>
-                      {item.label}
-                    </span>
-                  )}
-                </motion.button>
+                )}
+              </motion.button>
 
-                {/* Popup Menu */}
-                <AnimatePresence>
-                  {isOpen && hasChildren && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                      className={`
-                        absolute bg-white/90 backdrop-blur-xl border border-gray-200/50 shadow-xl rounded-2xl p-2 flex gap-1 z-30
-                        ${getPopupClasses()}
-                      `}
-                    >
-                      {item.children!.map((child) => {
-                        const isChildSelected = activeTab === child.id;
-                        return (
-                          <button
-                            key={child.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSubItemClick(child.id);
-                            }}
-                            className={`
-                              flex items-center gap-2 px-3 py-2 rounded-xl transition-colors whitespace-nowrap
-                              ${isChildSelected 
-                                ? 'bg-primary-50 text-primary-600' 
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                              }
-                            `}
-                          >
-                            <child.icon className="w-4 h-4" />
-                            <span className="text-sm font-medium">{child.label}</span>
-                          </button>
-                        );
-                      })}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
-        </motion.nav>
-      </motion.div>
-    </div>
+              {/* Popup Menu */}
+              <AnimatePresence>
+                {isOpen && hasChildren && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className={`
+                      absolute bg-white/90 backdrop-blur-xl border border-gray-200/50 shadow-xl rounded-2xl p-2 flex gap-1 z-30
+                      ${getPopupClasses()}
+                    `}
+                  >
+                    {item.children!.map((child) => {
+                      const isChildSelected = activeTab === child.id;
+                      return (
+                        <button
+                          key={child.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSubItemClick(child.id);
+                          }}
+                          className={`
+                            flex items-center gap-2 px-3 py-2 rounded-xl transition-colors whitespace-nowrap
+                            ${isChildSelected 
+                              ? 'bg-primary-50 text-primary-600' 
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            }
+                          `}
+                        >
+                          <child.icon className="w-4 h-4" />
+                          <span className="text-sm font-medium">{child.label}</span>
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+      </motion.nav>
+    </motion.div>
   );
 };
 
