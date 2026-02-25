@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { 
-  ChevronLeft, Edit2, Star, Copy, Trash2, 
-  Info, ExternalLink, FolderTree, Shield, History,
-  Search, ArrowUp, ArrowDown, ArrowUpToLine, Database
+  ChevronLeft, Star, Edit2, Copy, History, Trash2, Search, Info, 
+  ArrowUp, ArrowDown, ArrowUpToLine, Database, ExternalLink, Shield, FolderTree 
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Badge from '@/components/ui/Badge';
-import Tabs from '@/components/ui/Tabs';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import Tabs from '@/components/ui/Tabs';
+import Badge from '@/components/ui/Badge';
+import Pagination from '@/components/ui/Pagination';
 import { ElementNode, Property } from '../types';
 
 interface ElementDetailPanelProps {
@@ -23,12 +23,33 @@ interface ElementDetailPanelProps {
   onSelectProperty: (prop: Property) => void;
   onChildAction: (action: string, childId: string) => void;
   onOpenModal: (type: string, payload?: any) => void;
+  
+  // Child List Props
+  childSearchKeyword: string;
+  setChildSearchKeyword: (val: string) => void;
+  childCategoryFilter: string;
+  setChildCategoryFilter: (val: string) => void;
+  childTemplateFilter: string;
+  setChildTemplateFilter: (val: string) => void;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  pageSize: number;
+  filteredChildren: ElementNode[];
+  paginatedChildren: ElementNode[];
+  availableCategories: string[];
+  availableTemplates: string[];
 }
 
 export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
   node, properties, breadcrumbs,
   onBack, onEdit, onDelete, onToggleFavorite,
-  onSelectProperty, onChildAction, onOpenModal
+  onSelectProperty, onChildAction, onOpenModal,
+  childSearchKeyword, setChildSearchKeyword,
+  childCategoryFilter, setChildCategoryFilter,
+  childTemplateFilter, setChildTemplateFilter,
+  currentPage, setCurrentPage, pageSize,
+  filteredChildren, paginatedChildren,
+  availableCategories, availableTemplates
 }) => {
   const [activeTab, setActiveTab] = useState('children');
 
@@ -44,7 +65,8 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" leftIcon={<Edit2 className="w-4 h-4" />} onClick={onEdit}>编辑</Button>
           <Button variant="ghost" size="sm" leftIcon={<Star className="w-4 h-4" />} onClick={onToggleFavorite}>{node.isFavorite ? '取消收藏' : '收藏'}</Button>
-          <Button variant="ghost" size="sm" leftIcon={<Copy className="w-4 h-4" />} onClick={() => onOpenModal('INFO', { message: '已加入模板' })}>加入模板</Button>
+          <Button variant="ghost" size="sm" leftIcon={<Copy className="w-4 h-4" />} onClick={() => onOpenModal('ADD_TEMPLATE')}>加入模板</Button>
+          <Button variant="ghost" size="sm" leftIcon={<History className="w-4 h-4" />} onClick={() => onOpenModal('HISTORY')}>历史趋势</Button>
           <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" leftIcon={<Trash2 className="w-4 h-4" />} onClick={onDelete}>删除</Button>
         </div>
       </div>
@@ -81,7 +103,24 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
           />
         </div>
         <div className="flex-1 overflow-hidden">
-          {activeTab === 'children' && <ChildElementsTab node={node} onAction={onChildAction} />}
+          {activeTab === 'children' && (
+            <ChildElementsTab 
+              paginatedChildren={paginatedChildren}
+              onAction={onChildAction}
+              searchKeyword={childSearchKeyword}
+              setSearchKeyword={setChildSearchKeyword}
+              categoryFilter={childCategoryFilter}
+              setCategoryFilter={setChildCategoryFilter}
+              templateFilter={childTemplateFilter}
+              setTemplateFilter={setChildTemplateFilter}
+              availableCategories={availableCategories}
+              availableTemplates={availableTemplates}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              totalItems={filteredChildren.length}
+              pageSize={pageSize}
+            />
+          )}
           {activeTab === 'properties' && <PropertiesTab properties={properties} onSelectProperty={onSelectProperty} />}
           {activeTab === 'info' && <InfoTab breadcrumbs={breadcrumbs} />}
         </div>
@@ -90,16 +129,41 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
   );
 };
 
-const ChildElementsTab = ({ node, onAction }: { node: ElementNode, onAction: (action: string, id: string) => void }) => {
-  const children = node.children || [];
+interface ChildElementsTabProps {
+  paginatedChildren: ElementNode[];
+  onAction: (action: string, id: string) => void;
+  searchKeyword: string;
+  setSearchKeyword: (val: string) => void;
+  categoryFilter: string;
+  setCategoryFilter: (val: string) => void;
+  templateFilter: string;
+  setTemplateFilter: (val: string) => void;
+  availableCategories: string[];
+  availableTemplates: string[];
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  totalItems: number;
+  pageSize: number;
+}
+
+const ChildElementsTab = ({ 
+  paginatedChildren, onAction,
+  searchKeyword, setSearchKeyword,
+  categoryFilter, setCategoryFilter,
+  templateFilter, setTemplateFilter,
+  availableCategories, availableTemplates,
+  currentPage, setCurrentPage, totalItems, pageSize
+}: ChildElementsTabProps) => {
+  const totalPages = Math.ceil(totalItems / pageSize);
+
   return (
     <div className="p-6 flex flex-col h-full overflow-hidden">
       {/* Toolbar */}
       <div className="flex gap-2 mb-4 shrink-0">
         <div className="w-48">
           <Input 
-            value=""
-            onChange={() => {}}
+            value={searchKeyword}
+            onChange={setSearchKeyword}
             placeholder="关键字搜索..." 
             size="sm"
             icon={<Search className="w-4 h-4" />}
@@ -107,18 +171,18 @@ const ChildElementsTab = ({ node, onAction }: { node: ElementNode, onAction: (ac
         </div>
         <div className="w-32">
           <Select 
-            value="" 
-            onChange={() => {}} 
+            value={categoryFilter} 
+            onChange={setCategoryFilter} 
             size="sm"
-            options={[{value: '', label: '全部分类'}]} 
+            options={[{value: '', label: '全部分类'}, ...availableCategories.map(c => ({value: c, label: c}))]} 
           />
         </div>
         <div className="w-32">
           <Select 
-            value="" 
-            onChange={() => {}} 
+            value={templateFilter} 
+            onChange={setTemplateFilter} 
             size="sm"
-            options={[{value: '', label: '全部模板'}]} 
+            options={[{value: '', label: '全部模板'}, ...availableTemplates.map(t => ({value: t, label: t}))]} 
           />
         </div>
       </div>
@@ -138,7 +202,7 @@ const ChildElementsTab = ({ node, onAction }: { node: ElementNode, onAction: (ac
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {children.length > 0 ? children.map(child => (
+            {paginatedChildren.length > 0 ? paginatedChildren.map(child => (
               <tr key={child.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3 font-medium text-gray-900">{child.label}</td>
                 <td className="px-4 py-3 font-mono text-xs text-gray-500">{child.path}</td>
@@ -169,13 +233,15 @@ const ChildElementsTab = ({ node, onAction }: { node: ElementNode, onAction: (ac
           </tbody>
         </table>
       </div>
-      {/* Pagination mock */}
+      {/* Pagination */}
       <div className="mt-4 flex justify-between items-center text-sm text-gray-500 shrink-0">
-        <span>共 {children.length} 条记录</span>
-        <div className="flex gap-1">
-          <Button variant="secondary" size="sm" disabled>上一页</Button>
-          <Button variant="secondary" size="sm" disabled>下一页</Button>
-        </div>
+        <span>共 {totalItems} 条记录</span>
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          showJumpTo
+        />
       </div>
     </div>
   );
@@ -238,11 +304,19 @@ const InfoTab = ({ breadcrumbs }: { breadcrumbs: ElementNode[] }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="p-4 bg-gray-50 border-dashed">
           <h3 className="font-bold mb-2 flex items-center gap-2 text-gray-500"><Shield className="w-4 h-4" /> 安全配置</h3>
-          <p className="text-xs text-gray-400">暂未实现</p>
+          <ul className="text-xs text-gray-500 space-y-1">
+            <li className="flex justify-between"><span>访问级别:</span> <span className="font-medium text-gray-700">Level 3</span></li>
+            <li className="flex justify-between"><span>最后审计:</span> <span className="font-medium text-gray-700">2024-02-15</span></li>
+            <li className="flex justify-between"><span>加密状态:</span> <span className="text-green-600">已启用</span></li>
+          </ul>
         </Card>
         <Card className="p-4 bg-gray-50 border-dashed">
           <h3 className="font-bold mb-2 flex items-center gap-2 text-gray-500"><History className="w-4 h-4" /> 版本历史</h3>
-          <p className="text-xs text-gray-400">暂未实现</p>
+          <ul className="text-xs text-gray-500 space-y-1">
+            <li className="flex justify-between"><span>v2.1.0</span> <span className="text-gray-400">2024-01-10</span></li>
+            <li className="flex justify-between"><span>v2.0.5</span> <span className="text-gray-400">2023-12-05</span></li>
+            <li className="flex justify-between"><span>v1.9.8</span> <span className="text-gray-400">2023-11-20</span></li>
+          </ul>
         </Card>
       </div>
     </div>

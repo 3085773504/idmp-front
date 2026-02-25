@@ -14,6 +14,7 @@ export interface ElementNode extends TreeNode {
   additionalProperties?: Record<string, string>;
   defaultProperties?: string;
   isFavorite?: boolean;
+  isTemplate?: boolean;
   stats?: {
     totalElements: number;
     totalProperties: number;

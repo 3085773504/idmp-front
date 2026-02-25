@@ -18,11 +18,12 @@ interface CatalogTreePanelProps {
   selectedNode: ElementNode | null;
   handleSelectNode: (node: TreeNode) => void;
   onCreateElement: () => void;
+  expandedIds: Set<string>;
 }
 
 export const CatalogTreePanel: React.FC<CatalogTreePanelProps> = ({
   dimension, setDimension, categoryFilter, setCategoryFilter, viewState,
-  handleRefresh, filteredTreeData, selectedNode, handleSelectNode, onCreateElement
+  handleRefresh, filteredTreeData, selectedNode, handleSelectNode, onCreateElement, expandedIds
 }) => {
   return (
     <Card className="w-full md:w-80 flex flex-col p-0 overflow-hidden shrink-0 h-[calc(100vh-8rem)]">
@@ -77,7 +78,7 @@ export const CatalogTreePanel: React.FC<CatalogTreePanelProps> = ({
             selectedId={selectedNode?.id}
             onSelect={handleSelectNode}
             variant="timeseries"
-            defaultExpandedIds={['root-1', 'ws-1']}
+            defaultExpandedIds={Array.from(expandedIds)}
           />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-gray-400">

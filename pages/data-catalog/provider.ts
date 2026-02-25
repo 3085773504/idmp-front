@@ -36,6 +36,23 @@ const mockProperties: Record<string, Property[]> = {
   ]
 };
 
+const generateMockChildren = (count: number, parentPath: string): ElementNode[] => {
+  return Array.from({ length: count }).map((_, i) => ({
+    id: `mock-child-${i}`,
+    label: `设备 ${i + 1}`,
+    type: 'DEVICE',
+    path: `${parentPath}.dev${i + 1}`,
+    category: i % 3 === 0 ? '关键设备' : '辅助设备',
+    template: i % 2 === 0 ? 'CNC标准模板' : '通用设备模板',
+    description: `自动生成的模拟设备数据 ${i + 1}`,
+    location: { '工位': `A-${i}` },
+    additionalProperties: { '维保周期': '30天', '生产商': 'ABC公司' },
+    defaultProperties: '温度, 压力',
+    isFavorite: false,
+    children: []
+  }));
+};
+
 const mockTreeDataPhysical: ElementNode[] = [
   {
     id: 'root-1',
@@ -73,7 +90,8 @@ const mockTreeDataPhysical: ElementNode[] = [
             additionalProperties: { '维保周期': '30天', '生产商': 'ABC公司' },
             defaultProperties: '温度, 压力',
             isFavorite: true
-          }
+          },
+          ...generateMockChildren(25, 'root.bj.ws1')
         ]
       }
     ]
