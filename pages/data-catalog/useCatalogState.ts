@@ -82,13 +82,35 @@ export function useCatalogState(provider: CatalogProvider = mockCatalogProvider)
     setViewState('ELEMENT_DETAIL');
   }, []);
 
+  // Helper: Generate slug from name
+  const generateSlug = (name: string): string => {
+    return name.trim().toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-_]/g, '');
+  };
+
+  // Helper: Generate unique path
+  const generateUniquePath = (parentPath: string, slug: string, siblings: ElementNode[]): string => {
+    const basePath = `${parentPath}.${slug}`;
+    let uniquePath = basePath;
+    let counter = 2;
+    
+    // Check if path exists in siblings
+    while (siblings.some(s => s.path === uniquePath)) {
+      uniquePath = `${basePath}-${counter}`;
+      counter++;
+    }
+    return uniquePath;
+  };
+
   // Filtered Tree Data
   const filteredTreeData = useMemo(() => {
     if (!categoryFilter) return treeData;
     
     const filterNode = (nodes: ElementNode[]): ElementNode[] => {
       return nodes.reduce((acc, node) => {
-        const matches = node.category === categoryFilter;
+        // Case-insensitive contains match
+        const matches = node.category?.toLowerCase().includes(categoryFilter.toLowerCase());
         const filteredChildren = node.children ? filterNode(node.children) : [];
         
         if (matches || filteredChildren.length > 0) {
@@ -228,6 +250,8 @@ export function useCatalogState(provider: CatalogProvider = mockCatalogProvider)
     updateTree,
     deleteFromTree,
     updatePathRecursively,
-    getBreadcrumbs
+    getBreadcrumbs,
+    generateSlug,
+    generateUniquePath
   };
 }

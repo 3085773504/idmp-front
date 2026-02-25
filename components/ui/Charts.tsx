@@ -136,7 +136,7 @@ const barData = [
   { name: 'Jul', sales: 3490, profit: 4300 },
 ];
 
-export const RoundedBarChart: React.FC<ChartProps> = ({ 
+export const SpotlightBarChart: React.FC<ChartProps> = ({ 
   data = barData, 
   height = 300, 
   className = '' 

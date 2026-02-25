@@ -42,7 +42,7 @@ import Pagination from '../components/ui/Pagination';
 import ProgressBar from '../components/ui/ProgressBar';
 import { 
     SmoothAreaChart, 
-    RoundedBarChart, 
+    SpotlightBarChart, 
     InteractiveDonutChart, 
     HexRadarChart, 
     LineComparisonChart, 
@@ -1399,7 +1399,7 @@ const UILibrary: React.FC = () => {
                        <RefreshButton onClick={() => refreshChart('bar')} id={chartKeys.bar} />
                    </div>
                  </div>
-                 <RoundedBarChart key={chartKeys.bar} />
+                 <SpotlightBarChart key={chartKeys.bar} />
                </Card>
                <Card className="p-6">
                  <div className="flex items-center justify-between mb-6">

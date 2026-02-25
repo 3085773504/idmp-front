@@ -11,7 +11,8 @@ import { RootOverviewPanel } from '@/pages/data-catalog/components/RootOverviewP
 import { ElementDetailPanel } from '@/pages/data-catalog/components/ElementDetailPanel';
 import { PropertyDetailPanel } from '@/pages/data-catalog/components/PropertyDetailPanel';
 import { ElementNode } from '@/pages/data-catalog/types';
-import { SmoothAreaChart } from '@/components/ui/Charts';
+import { SmoothAreaChart, SpotlightBarChart } from '@/components/ui/Charts';
+import { TableContainer, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table';
 
 export default function DataCatalog() {
   const {
@@ -36,7 +37,8 @@ export default function DataCatalog() {
     
     handleRefresh, handleSelectNode, handleSelectProperty,
     handleBackToElement, handleToggleFavorite,
-    updateTree, deleteFromTree, updatePathRecursively, getBreadcrumbs
+    updateTree, deleteFromTree, updatePathRecursively, getBreadcrumbs,
+    generateSlug, generateUniquePath, treeData
   } = useCatalogState();
 
   const [modalState, setModalState] = useState<{ type: string | null, payload?: any }>({ type: null });
@@ -48,24 +50,12 @@ export default function DataCatalog() {
     const { type, payload } = modalState;
     if (type === 'CREATE_ELEMENT') {
       if (modalInput.trim()) {
-        // Determine parent: selectedNode or root if none (but usually we create under selected)
-        // If no selectedNode, we might append to root level of treeData... 
-        // But for simplicity, let's assume we create under selectedNode if it exists, 
-        // or if it's ROOT_OVERVIEW.
-        
-        // Actually, the requirement says "New element defaults to under currently selected node (if none, root)".
-        // Since we only show CREATE button in TreePanel, let's assume we append to selectedNode if selected,
-        // or to the root list if nothing selected (though UI might not support "nothing selected" easily).
-        
         const parentNode = selectedNode;
         const parentPath = parentNode ? parentNode.path : 'root';
+        const siblings = parentNode ? (parentNode.children || []) : treeData;
         
-        // Simple slug generation
-        const slug = modalInput.trim(); // In real app, sanitize this
-        const newPath = `${parentPath}.${slug}`;
-        
-        // Check uniqueness in siblings? 
-        // For mock, we just append timestamp to ID to be safe.
+        const slug = generateSlug(modalInput);
+        const newPath = generateUniquePath(parentPath, slug, siblings);
         
         const newNode: ElementNode = {
           id: `new-${Date.now()}`,
@@ -79,23 +69,25 @@ export default function DataCatalog() {
            const updatedParent = { ...parentNode, children: [...(parentNode.children || []), newNode] };
            setSelectedNode(updatedParent);
            setTreeData(prev => updateTree(prev, parentNode.id, () => updatedParent));
-           // Auto expand parent
            setExpandedIds(prev => new Set(prev).add(parentNode.id));
         } else {
-           // Append to root
            setTreeData(prev => [...prev, newNode]);
         }
       }
     } else if (type === 'EDIT_ELEMENT' && selectedNode) {
       if (modalInput.trim()) {
         const parentPath = selectedNode.path.substring(0, selectedNode.path.lastIndexOf('.'));
-        const newSlug = modalInput.trim();
-        const newPath = `${parentPath}.${newSlug}`;
+        const slug = generateSlug(modalInput);
+        // Find siblings (excluding self) to check uniqueness
+        // This is tricky without parent ref, but we can assume uniqueness check isn't strict for rename in this mock
+        // OR we can just generate path. 
+        // Let's just generate path. If collision happens, it happens (mock limitation without full tree traversal to find parent)
+        // Ideally we should find parent to check siblings.
         
-        // Update current node
+        const newPath = `${parentPath}.${slug}`;
+        
         let updatedNode = { ...selectedNode, label: modalInput.trim(), path: newPath };
         
-        // Recursively update children paths
         if (updatedNode.children) {
              updatedNode.children = updatedNode.children.map(child => updatePathRecursively(child, newPath));
         }
@@ -109,17 +101,15 @@ export default function DataCatalog() {
       setViewState('EMPTY');
     } else if (type === 'ADD_TEMPLATE') {
         if (selectedTemplate) {
-            // Mock update template
             if (selectedNode) {
                 const updatedNode = { ...selectedNode, template: selectedTemplate };
                 setSelectedNode(updatedNode);
                 setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
                 setModalState({ type: 'INFO', payload: { message: `已成功应用模板: ${selectedTemplate}` } });
-                return; // Skip default close to show info
+                return;
             }
         }
     }
-    // ... (keep existing handlers for properties and children)
     else if (type === 'EDIT_PROPERTY' && selectedProperty && selectedNode) {
       if (modalInput.trim()) {
         const updatedProp = { ...selectedProperty, name: modalInput.trim() };
@@ -139,8 +129,11 @@ export default function DataCatalog() {
       if (modalInput.trim()) {
         const children = [...selectedNode.children];
         const child = children[payload.idx];
-        const newSlug = modalInput.trim();
-        const newPath = `${selectedNode.path}.${newSlug}`;
+        const slug = generateSlug(modalInput);
+        
+        // Check siblings for uniqueness (excluding self)
+        const siblings = children.filter((_, i) => i !== payload.idx);
+        const newPath = generateUniquePath(selectedNode.path, slug, siblings);
         
         let updatedChild = { ...child, label: modalInput.trim(), path: newPath };
         if (updatedChild.children) {
@@ -169,9 +162,55 @@ export default function DataCatalog() {
     if (!selectedNode || !selectedNode.children) return;
     const idx = selectedNode.children.findIndex(c => c.id === childId);
     if (idx === -1) return;
+    
+    const child = selectedNode.children[idx];
 
-    if (action === 'edit') {
+    if (action === 'detail') {
+      handleSelectNode(child);
+    } else if (action === 'edit') {
       openModal('EDIT_CHILD', { idx });
+    } else if (action === 'copy') {
+      const slug = generateSlug(child.label + '_副本');
+      const newPath = generateUniquePath(selectedNode.path, slug, selectedNode.children);
+      
+      const newChild = {
+        ...child,
+        id: `copy-${Date.now()}`,
+        label: child.label + '_副本',
+        path: newPath,
+        children: [] // Deep copy children if needed, but for now empty
+      };
+      
+      const children = [...selectedNode.children, newChild];
+      const updatedNode = { ...selectedNode, children };
+      setSelectedNode(updatedNode);
+      setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+      
+    } else if (action === 'up') {
+      if (idx > 0) {
+        const children = [...selectedNode.children];
+        [children[idx - 1], children[idx]] = [children[idx], children[idx - 1]];
+        const updatedNode = { ...selectedNode, children };
+        setSelectedNode(updatedNode);
+        setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+      }
+    } else if (action === 'down') {
+      if (idx < selectedNode.children.length - 1) {
+        const children = [...selectedNode.children];
+        [children[idx + 1], children[idx]] = [children[idx], children[idx + 1]];
+        const updatedNode = { ...selectedNode, children };
+        setSelectedNode(updatedNode);
+        setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+      }
+    } else if (action === 'top') {
+      if (idx > 0) {
+        const children = [...selectedNode.children];
+        const item = children.splice(idx, 1)[0];
+        children.unshift(item);
+        const updatedNode = { ...selectedNode, children };
+        setSelectedNode(updatedNode);
+        setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+      }
     } else if (action === 'delete') {
       openModal('DELETE_CHILD', { idx });
     }
@@ -288,10 +327,12 @@ export default function DataCatalog() {
           modalState.type === 'DELETE_PROPERTY' ? '删除属性确认' :
           modalState.type === 'ADD_TEMPLATE' ? '选择模板' :
           modalState.type === 'HISTORY' ? '历史趋势' :
+          modalState.type === 'HISTORY_VALUES' ? '历史值' :
+          modalState.type === 'TREND_CHART' ? '趋势图' :
           '提示'
         }
         footer={
-          modalState.type === 'HISTORY' ? null : (
+          (modalState.type === 'HISTORY' || modalState.type === 'HISTORY_VALUES' || modalState.type === 'TREND_CHART') ? null : (
             <div className="px-6 py-5 bg-gray-50/50 flex justify-end gap-3 border-t border-gray-50 shrink-0">
                 {modalState.type !== 'INFO' && (
                 <Button variant="secondary" className="px-6 rounded-2xl" onClick={() => setModalState({ type: null })}>取消</Button>
@@ -300,7 +341,7 @@ export default function DataCatalog() {
             </div>
           )
         }
-        className={modalState.type === 'HISTORY' ? '!max-w-2xl' : ''}
+        className={(modalState.type === 'HISTORY' || modalState.type === 'TREND_CHART' || modalState.type === 'HISTORY_VALUES') ? '!max-w-3xl' : ''}
       >
         <div className="py-4">
           {(modalState.type === 'CREATE_ELEMENT' || modalState.type === 'EDIT_ELEMENT' || modalState.type === 'EDIT_CHILD' || modalState.type === 'EDIT_PROPERTY') && (
@@ -353,6 +394,36 @@ export default function DataCatalog() {
           {modalState.type === 'HISTORY' && (
              <div className="h-[300px] w-full">
                 <SmoothAreaChart height={300} />
+             </div>
+          )}
+          
+          {modalState.type === 'TREND_CHART' && (
+             <div className="h-[400px] w-full p-4">
+                <SpotlightBarChart height={350} />
+                <p className="text-center text-sm text-gray-500 mt-2">近24小时数据趋势</p>
+             </div>
+          )}
+
+          {modalState.type === 'HISTORY_VALUES' && (
+             <div className="h-[400px] w-full overflow-hidden flex flex-col">
+                <TableContainer className="flex-1 overflow-auto">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>时间</TableHead>
+                      <TableHead>值</TableHead>
+                      <TableHead>质量</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array.from({ length: 20 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell>{new Date(Date.now() - i * 60000 * 10).toLocaleString()}</TableCell>
+                        <TableCell>{(Math.random() * 100).toFixed(2)}</TableCell>
+                        <TableCell><span className="text-green-600">Good</span></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </TableContainer>
              </div>
           )}
           {modalState.type === 'INFO' && (

@@ -23,8 +23,8 @@ export const PropertyDetailPanel: React.FC<PropertyDetailPanelProps> = ({
         <h2 className="text-xl font-bold text-gray-900">{p.name} <span className="text-sm font-normal text-gray-500 ml-2">(属性详情)</span></h2>
         <div className="ml-auto flex gap-2">
           <Button variant="secondary" size="sm" leftIcon={<Edit2 className="w-4 h-4" />} onClick={onEdit}>编辑</Button>
-          <Button variant="secondary" size="sm" leftIcon={<History className="w-4 h-4" />} onClick={() => onOpenModal('INFO', { message: '查看历史值' })}>历史值</Button>
-          <Button variant="secondary" size="sm" leftIcon={<LineChart className="w-4 h-4" />} onClick={() => onOpenModal('INFO', { message: '查看趋势' })}>趋势</Button>
+          <Button variant="secondary" size="sm" leftIcon={<History className="w-4 h-4" />} onClick={() => onOpenModal('HISTORY_VALUES')}>历史值</Button>
+          <Button variant="secondary" size="sm" leftIcon={<LineChart className="w-4 h-4" />} onClick={() => onOpenModal('TREND_CHART')}>趋势</Button>
           <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" leftIcon={<Trash2 className="w-4 h-4" />} onClick={onDelete}>删除</Button>
         </div>
       </div>
