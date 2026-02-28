@@ -31,7 +31,7 @@ const Tabs: React.FC<TabsProps> = ({
   // Adjust padding based on size and variant
   let itemPadding = size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-5 py-2 text-sm';
   if (variant === 'underline') {
-      itemPadding = size === 'sm' ? 'px-3 py-3 text-xs' : 'px-5 py-4 text-sm';
+      itemPadding = size === 'sm' ? 'px-3 py-2 text-xs' : 'px-5 py-4 text-sm';
   }
   
   // Container Layout

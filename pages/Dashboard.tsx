@@ -122,6 +122,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.3 }}
+            className="flex-1 overflow-y-auto custom-scrollbar"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {stats.map((stat, i) => (
@@ -222,7 +223,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
-            className="h-full"
+            className="flex-1 min-h-0 h-full flex flex-col"
           >
             <DataCatalog />
           </motion.div>
@@ -304,11 +305,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         />
       }
     >
-      <div className="max-w-7xl mx-auto p-4 lg:p-8 h-full">
-        <AnimatePresence mode="wait">
-          {renderContent()}
-        </AnimatePresence>
-      </div>
+      <AnimatePresence mode="wait">
+        {renderContent()}
+      </AnimatePresence>
     </NavigationLayout>
   );
 };

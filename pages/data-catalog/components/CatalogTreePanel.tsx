@@ -26,8 +26,8 @@ export const CatalogTreePanel: React.FC<CatalogTreePanelProps> = ({
   handleRefresh, filteredTreeData, selectedNode, handleSelectNode, onCreateElement, expandedIds
 }) => {
   return (
-    <Card className="w-full md:w-80 flex flex-col p-0 overflow-hidden shrink-0 h-[calc(100vh-8rem)]">
-      <div className="p-4 border-b border-gray-100 space-y-4">
+    <Card className="w-full h-full flex flex-col p-0 overflow-hidden shadow-none border-0 rounded-none bg-transparent">
+      <div className="p-4 border-b border-gray-100 space-y-4 bg-white shrink-0">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-gray-900 flex items-center gap-2">
             <FolderTree className="w-5 h-5 text-indigo-600" />
@@ -43,7 +43,8 @@ export const CatalogTreePanel: React.FC<CatalogTreePanelProps> = ({
             <Select 
               value={dimension} 
               onChange={(val) => setDimension(val as Dimension)}
-              size="sm"
+              size="xs"
+              className="h-8 text-xs"
               options={[
                 { value: 'PHYSICAL', label: '物理维度' },
                 { value: 'FUNCTION', label: '功能维度' },
@@ -51,8 +52,8 @@ export const CatalogTreePanel: React.FC<CatalogTreePanelProps> = ({
               ]}
             />
           </div>
-          <Button variant="secondary" className="!w-[36px] !h-[36px] !min-h-0 !min-w-0 !p-0" isIconOnly onClick={handleRefresh}>
-            <RefreshCw className={`w-4 h-4 ${viewState === 'LOADING' ? 'animate-spin' : ''}`} />
+          <Button variant="secondary" className="!w-8 !h-8 !min-h-0 !min-w-0 !p-0 rounded-md" isIconOnly onClick={handleRefresh}>
+            <RefreshCw className={`w-3.5 h-3.5 ${viewState === 'LOADING' ? 'animate-spin' : ''}`} />
           </Button>
         </div>
 
@@ -61,8 +62,9 @@ export const CatalogTreePanel: React.FC<CatalogTreePanelProps> = ({
             value={categoryFilter}
             onChange={(val) => setCategoryFilter(val)}
             placeholder="按类别过滤..." 
-            size="sm"
-            icon={<Search className="w-4 h-4" />}
+            size="xs"
+            className="h-8 text-xs"
+            icon={<Search className="w-3.5 h-3.5" />}
           />
         </div>
       </div>

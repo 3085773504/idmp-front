@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { AlertCircle, FolderTree } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { AlertCircle, FolderTree, GripVertical } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import { useToast } from '@/components/ui/Toast';
 import { useCatalogState } from '@/pages/data-catalog/useCatalogState';
 import { CatalogTreePanel } from '@/pages/data-catalog/components/CatalogTreePanel';
 import { RootOverviewPanel } from '@/pages/data-catalog/components/RootOverviewPanel';
@@ -15,6 +16,7 @@ import { SmoothAreaChart, SpotlightBarChart } from '@/components/ui/Charts';
 import { TableContainer, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table';
 
 export default function DataCatalog() {
+  const { addToast } = useToast();
   const {
     dimension, setDimension,
     filteredTreeData, setTreeData,
@@ -45,6 +47,68 @@ export default function DataCatalog() {
   const [modalInput, setModalInput] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('');
 
+  // Mobile & Layout State
+  const [isMobileTreeOpen, setIsMobileTreeOpen] = useState(false);
+  const isMobile = window.innerWidth < 768; // Simple check, ideally use a hook
+
+  // Resizable Sidebar State
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    try {
+      const saved = localStorage.getItem('datacatalog-sidebar-width');
+      return saved ? Math.max(200, Math.min(600, parseInt(saved))) : 280;
+    } catch {
+      return 280;
+    }
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-close mobile tree on selection
+  useEffect(() => {
+    if (isMobile && selectedNode) {
+        setIsMobileTreeOpen(false);
+    }
+  }, [selectedNode, isMobile]);
+
+  // Persist sidebar width
+  useEffect(() => {
+    localStorage.setItem('datacatalog-sidebar-width', sidebarWidth.toString());
+  }, [sidebarWidth]);
+
+  const startResizing = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback((e: MouseEvent) => {
+    if (isResizing && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const newWidth = e.clientX - containerRect.left;
+      if (newWidth >= 200 && newWidth <= 600) {
+        setSidebarWidth(newWidth);
+      }
+    }
+  }, [isResizing]);
+
+  const resetSidebarWidth = useCallback(() => {
+    setSidebarWidth(280);
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', resize);
+      window.addEventListener('mouseup', stopResizing);
+    }
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
+
   // Modal Handlers
   const handleModalConfirm = () => {
     const { type, payload } = modalState;
@@ -73,18 +137,38 @@ export default function DataCatalog() {
         } else {
            setTreeData(prev => [...prev, newNode]);
         }
+        addToast({ type: 'success', title: '创建成功', message: `已创建元素: ${modalInput.trim()}` });
       }
     } else if (type === 'EDIT_ELEMENT' && selectedNode) {
       if (modalInput.trim()) {
         const parentPath = selectedNode.path.substring(0, selectedNode.path.lastIndexOf('.'));
         const slug = generateSlug(modalInput);
-        // Find siblings (excluding self) to check uniqueness
-        // This is tricky without parent ref, but we can assume uniqueness check isn't strict for rename in this mock
-        // OR we can just generate path. 
-        // Let's just generate path. If collision happens, it happens (mock limitation without full tree traversal to find parent)
-        // Ideally we should find parent to check siblings.
         
-        const newPath = `${parentPath}.${slug}`;
+        // Find siblings by finding parent node first
+        // Since we don't have direct parent reference, we search in treeData
+        // Note: This is a simplified approach. Ideally we should have parentId or parent reference.
+        let siblings: ElementNode[] = treeData;
+        if (parentPath !== 'root') {
+             // Try to find parent node in tree
+             const findNodeByPath = (nodes: ElementNode[], path: string): ElementNode | null => {
+                for (const node of nodes) {
+                    if (node.path === path) return node;
+                    if (node.children) {
+                        const found = findNodeByPath(node.children, path);
+                        if (found) return found;
+                    }
+                }
+                return null;
+             };
+             const parent = findNodeByPath(treeData, parentPath);
+             if (parent && parent.children) {
+                 siblings = parent.children.filter(c => c.id !== selectedNode.id);
+             }
+        } else {
+             siblings = treeData.filter(c => c.id !== selectedNode.id);
+        }
+
+        const newPath = generateUniquePath(parentPath, slug, siblings);
         
         let updatedNode = { ...selectedNode, label: modalInput.trim(), path: newPath };
         
@@ -94,18 +178,21 @@ export default function DataCatalog() {
         
         setSelectedNode(updatedNode);
         setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+        addToast({ type: 'success', title: '修改成功', message: `元素已重命名为: ${modalInput.trim()}` });
       }
     } else if (type === 'DELETE_ELEMENT' && selectedNode) {
       setTreeData(prev => deleteFromTree(prev, selectedNode.id));
       setSelectedNode(null);
       setViewState('EMPTY');
+      addToast({ type: 'success', title: '删除成功', message: '元素及其子元素已删除' });
     } else if (type === 'ADD_TEMPLATE') {
         if (selectedTemplate) {
             if (selectedNode) {
                 const updatedNode = { ...selectedNode, template: selectedTemplate };
                 setSelectedNode(updatedNode);
                 setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
-                setModalState({ type: 'INFO', payload: { message: `已成功应用模板: ${selectedTemplate}` } });
+                addToast({ type: 'success', title: '模板应用成功', message: `已应用模板: ${selectedTemplate}` });
+                // setModalState({ type: 'INFO', payload: { message: `已成功应用模板: ${selectedTemplate}` } });
                 return;
             }
         }
@@ -118,6 +205,7 @@ export default function DataCatalog() {
           ...prev,
           [selectedNode.id]: (prev[selectedNode.id] || []).map(p => p.id === updatedProp.id ? updatedProp : p)
         }));
+        addToast({ type: 'success', title: '修改成功', message: `属性已重命名为: ${modalInput.trim()}` });
       }
     } else if (type === 'DELETE_PROPERTY' && selectedProperty && selectedNode) {
       setPropertiesMap(prev => ({
@@ -125,6 +213,7 @@ export default function DataCatalog() {
         [selectedNode.id]: (prev[selectedNode.id] || []).filter(p => p.id !== selectedProperty.id)
       }));
       handleBackToElement();
+      addToast({ type: 'success', title: '删除成功', message: '属性已删除' });
     } else if (type === 'EDIT_CHILD' && selectedNode && selectedNode.children) {
       if (modalInput.trim()) {
         const children = [...selectedNode.children];
@@ -145,6 +234,7 @@ export default function DataCatalog() {
         const updatedNode = { ...selectedNode, children };
         setSelectedNode(updatedNode);
         setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+        addToast({ type: 'success', title: '修改成功', message: `子元素已重命名` });
       }
     } else if (type === 'DELETE_CHILD' && selectedNode && selectedNode.children) {
       const children = [...selectedNode.children];
@@ -152,6 +242,7 @@ export default function DataCatalog() {
       const updatedNode = { ...selectedNode, children };
       setSelectedNode(updatedNode);
       setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+      addToast({ type: 'success', title: '删除成功', message: '子元素已删除' });
     }
     setModalState({ type: null });
     setModalInput('');
@@ -185,6 +276,7 @@ export default function DataCatalog() {
       const updatedNode = { ...selectedNode, children };
       setSelectedNode(updatedNode);
       setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+      addToast({ type: 'success', title: '复制成功', message: `已复制元素: ${child.label}` });
       
     } else if (action === 'up') {
       if (idx > 0) {
@@ -193,6 +285,7 @@ export default function DataCatalog() {
         const updatedNode = { ...selectedNode, children };
         setSelectedNode(updatedNode);
         setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+        addToast({ type: 'success', title: '排序成功', message: '子元素顺序已更新' });
       }
     } else if (action === 'down') {
       if (idx < selectedNode.children.length - 1) {
@@ -201,6 +294,7 @@ export default function DataCatalog() {
         const updatedNode = { ...selectedNode, children };
         setSelectedNode(updatedNode);
         setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+        addToast({ type: 'success', title: '排序成功', message: '子元素顺序已更新' });
       }
     } else if (action === 'top') {
       if (idx > 0) {
@@ -210,6 +304,7 @@ export default function DataCatalog() {
         const updatedNode = { ...selectedNode, children };
         setSelectedNode(updatedNode);
         setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+        addToast({ type: 'success', title: '排序成功', message: '子元素顺序已更新' });
       }
     } else if (action === 'delete') {
       openModal('DELETE_CHILD', { idx });
@@ -232,87 +327,128 @@ export default function DataCatalog() {
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row gap-6">
-      {/* Left Panel: Tree View */}
-      <CatalogTreePanel 
-        dimension={dimension}
-        setDimension={setDimension}
-        categoryFilter={categoryFilter}
-        setCategoryFilter={setCategoryFilter}
-        viewState={viewState}
-        handleRefresh={handleRefresh}
-        filteredTreeData={filteredTreeData}
-        selectedNode={selectedNode}
-        handleSelectNode={handleSelectNode}
-        onCreateElement={() => openModal('CREATE_ELEMENT')}
-        expandedIds={expandedIds}
-      />
+    <div className="h-full w-full p-[15px] overflow-hidden select-none bg-gray-50 flex flex-col relative">
+      {/* Mobile Tree Toggle */}
+      <div className="md:hidden mb-2">
+        <Button 
+            variant="secondary" 
+            className="w-full justify-between"
+            onClick={() => setIsMobileTreeOpen(!isMobileTreeOpen)}
+            rightIcon={<FolderTree className="w-4 h-4" />}
+        >
+            {selectedNode ? selectedNode.label : '选择数据目录'}
+        </Button>
+      </div>
 
-      {/* Right Panel: Details */}
-      <Card className="flex-1 flex flex-col p-0 overflow-hidden h-[calc(100vh-8rem)]">
-        {/* ... (keep loading/error/empty states) */}
-        {viewState === 'LOADING' && (
-          <div className="h-full flex items-center justify-center">
-            <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        )}
-        {viewState === 'ERROR' && (
-          <div className="h-full flex flex-col items-center justify-center text-red-500">
-            <AlertCircle className="w-12 h-12 mb-4" />
-            <p>加载失败，请重试</p>
-            <Button variant="secondary" className="mt-4" onClick={handleRefresh}>重试</Button>
-          </div>
-        )}
-        {viewState === 'EMPTY' && (
-          <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50/30">
-            <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-6">
-              <FolderTree className="w-10 h-10 text-indigo-300" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">未选择节点</h3>
-            <p className="text-sm text-gray-500">请在左侧目录树中选择一个元素节点查看详情</p>
-          </div>
-        )}
-        {viewState === 'ROOT_OVERVIEW' && selectedNode && (
-          <RootOverviewPanel node={selectedNode} />
-        )}
-        {viewState === 'ELEMENT_DETAIL' && selectedNode && (
-          <ElementDetailPanel 
-            node={selectedNode}
-            properties={propertiesMap[selectedNode.id] || []}
-            breadcrumbs={getBreadcrumbs(selectedNode.id)}
-            onBack={() => setViewState('EMPTY')}
-            onEdit={() => openModal('EDIT_ELEMENT')}
-            onDelete={() => openModal('DELETE_ELEMENT')}
-            onToggleFavorite={handleToggleFavorite}
-            onSelectProperty={handleSelectProperty}
-            onChildAction={handleChildAction}
-            onOpenModal={openModal}
-            
-            childSearchKeyword={childSearchKeyword}
-            setChildSearchKeyword={setChildSearchKeyword}
-            childCategoryFilter={childCategoryFilter}
-            setChildCategoryFilter={setChildCategoryFilter}
-            childTemplateFilter={childTemplateFilter}
-            setChildTemplateFilter={setChildTemplateFilter}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            pageSize={pageSize}
-            filteredChildren={filteredChildren}
-            paginatedChildren={paginatedChildren}
-            availableCategories={availableCategories}
-            availableTemplates={availableTemplates}
+      <div 
+        ref={containerRef}
+        className="flex-1 flex flex-row bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden min-h-0 relative"
+      >
+        {/* Left Panel: Tree View - Resizable on Desktop, Overlay on Mobile */}
+        <div 
+          style={{ width: isMobile ? '100%' : sidebarWidth }} 
+          className={`
+            flex-shrink-0 h-full overflow-hidden border-r border-gray-100 bg-gray-50/30 flex flex-col
+            md:relative absolute z-30 bg-white transition-transform duration-300 ease-in-out
+            ${isMobile ? (isMobileTreeOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
+          `}
+        >
+          <CatalogTreePanel 
+            dimension={dimension}
+            setDimension={setDimension}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            viewState={viewState}
+            handleRefresh={handleRefresh}
+            filteredTreeData={filteredTreeData}
+            selectedNode={selectedNode}
+            handleSelectNode={handleSelectNode}
+            onCreateElement={() => openModal('CREATE_ELEMENT')}
+            expandedIds={expandedIds}
           />
-        )}
-        {viewState === 'PROPERTY_DETAIL' && selectedProperty && (
-          <PropertyDetailPanel 
-            property={selectedProperty}
-            onBack={handleBackToElement}
-            onEdit={() => openModal('EDIT_PROPERTY')}
-            onDelete={() => openModal('DELETE_PROPERTY')}
-            onOpenModal={openModal}
-          />
-        )}
-      </Card>
+        </div>
+
+        {/* Resizer Handle (Desktop Only) */}
+        <div
+          className={`w-1 cursor-col-resize hover:bg-indigo-500 transition-colors z-20 flex items-center justify-center group relative shrink-0 hidden md:flex
+            ${isResizing ? 'bg-indigo-600' : 'bg-gray-100 hover:bg-indigo-300'}
+          `}
+          onMouseDown={startResizing}
+          onDoubleClick={resetSidebarWidth}
+          title="双击恢复默认宽度"
+        >
+           {/* Visual handle indicator */}
+           <div className={`w-1 h-8 rounded-full bg-gray-300 group-hover:bg-white transition-colors absolute ${isResizing ? 'bg-white' : ''}`} />
+        </div>
+
+        {/* Right Panel: Details - Auto-fill */}
+        <div className="flex-1 min-w-0 h-full flex flex-col bg-white overflow-hidden relative">
+          <div className="flex-1 flex flex-col p-0 overflow-auto h-full custom-scrollbar">
+            {/* ... (keep loading/error/empty states) */}
+            {viewState === 'LOADING' && (
+              <div className="h-full flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
+            {viewState === 'ERROR' && (
+              <div className="h-full flex flex-col items-center justify-center text-red-500">
+                <AlertCircle className="w-12 h-12 mb-4" />
+                <p>加载失败，请重试</p>
+                <Button variant="secondary" className="mt-4" onClick={handleRefresh}>重试</Button>
+              </div>
+            )}
+            {viewState === 'EMPTY' && (
+              <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50/30">
+                <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-6">
+                  <FolderTree className="w-10 h-10 text-indigo-300" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">未选择节点</h3>
+                <p className="text-sm text-gray-500">请在左侧目录树中选择一个元素节点查看详情</p>
+              </div>
+            )}
+            {viewState === 'ROOT_OVERVIEW' && selectedNode && (
+              <RootOverviewPanel node={selectedNode} />
+            )}
+            {viewState === 'ELEMENT_DETAIL' && selectedNode && (
+              <ElementDetailPanel 
+                node={selectedNode}
+                properties={propertiesMap[selectedNode.id] || []}
+                breadcrumbs={getBreadcrumbs(selectedNode.id)}
+                onBack={() => setViewState('EMPTY')}
+                onEdit={() => openModal('EDIT_ELEMENT')}
+                onDelete={() => openModal('DELETE_ELEMENT')}
+                onToggleFavorite={handleToggleFavorite}
+                onSelectProperty={handleSelectProperty}
+                onChildAction={handleChildAction}
+                onOpenModal={openModal}
+                
+                childSearchKeyword={childSearchKeyword}
+                setChildSearchKeyword={setChildSearchKeyword}
+                childCategoryFilter={childCategoryFilter}
+                setChildCategoryFilter={setChildCategoryFilter}
+                childTemplateFilter={childTemplateFilter}
+                setChildTemplateFilter={setChildTemplateFilter}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                pageSize={pageSize}
+                filteredChildren={filteredChildren}
+                paginatedChildren={paginatedChildren}
+                availableCategories={availableCategories}
+                availableTemplates={availableTemplates}
+              />
+            )}
+            {viewState === 'PROPERTY_DETAIL' && selectedProperty && (
+              <PropertyDetailPanel 
+                property={selectedProperty}
+                onBack={handleBackToElement}
+                onEdit={() => openModal('EDIT_PROPERTY')}
+                onDelete={() => openModal('DELETE_PROPERTY')}
+                onOpenModal={openModal}
+              />
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Modals */}
       <Modal 

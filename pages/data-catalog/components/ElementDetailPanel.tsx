@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ChevronLeft, Star, Edit2, Copy, History, Trash2, Search, Info, 
-  ArrowUp, ArrowDown, ArrowUpToLine, Database, ExternalLink, Shield, FolderTree 
+  ArrowUp, ArrowDown, ArrowUpToLine, Database, ExternalLink, Shield, FolderTree,
+  Tag, FileText, Link2
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -10,6 +12,9 @@ import Select from '@/components/ui/Select';
 import Tabs from '@/components/ui/Tabs';
 import Badge from '@/components/ui/Badge';
 import Pagination from '@/components/ui/Pagination';
+import { 
+  TableContainer, TableHeader, TableBody, TableRow, TableHead, TableCell 
+} from '@/components/ui/Table';
 import { ElementNode, Property } from '../types';
 
 interface ElementDetailPanelProps {
@@ -54,7 +59,7 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
   const [activeTab, setActiveTab] = useState('children');
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full w-full overflow-hidden">
       {/* Top Actions */}
       <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
         <div className="flex items-center gap-2">
@@ -71,26 +76,45 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
         </div>
       </div>
 
-      {/* Main Info - Fixed Order: Path, Category, Template, Description, Location, Additional, Default */}
-      <div className="p-6 bg-gray-50/50 border-b border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm shrink-0">
-        <div className="col-span-2 md:col-span-4"><span className="text-gray-500">完整路径:</span> <span className="font-mono ml-2">{node.path}</span></div>
-        <div><span className="text-gray-500">分类:</span> <span className="ml-2">{node.category || '-'}</span></div>
-        <div><span className="text-gray-500">模板:</span> <span className="ml-2">{node.template || '-'}</span></div>
-        <div><span className="text-gray-500">描述:</span> <span className="ml-2">{node.description || '-'}</span></div>
-        <div><span className="text-gray-500">默认属性:</span> <span className="ml-2">{node.defaultProperties || '-'}</span></div>
-        {/* Location */}
-        {node.location && Object.entries(node.location).map(([k, v]) => (
-          <div key={k}><span className="text-gray-500">位置({k}):</span> <span className="ml-2">{v}</span></div>
-        ))}
-        {/* Additional Properties */}
-        {node.additionalProperties && Object.entries(node.additionalProperties).map(([k, v]) => (
-          <div key={k}><span className="text-gray-500">{k}:</span> <span className="ml-2">{v}</span></div>
-        ))}
+      {/* Main Info - Compact Layout */}
+      <div className="px-6 py-4 bg-white border-b border-gray-100 flex flex-col gap-2 text-sm shrink-0 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] z-10">
+        <div className="flex items-center gap-2">
+           <span className="text-gray-400 font-medium">路径:</span>
+           <code className="font-mono text-xs bg-gray-50 px-2 py-0.5 rounded text-gray-600 border border-gray-100">{node.path}</code>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-gray-500">
+          <div className="flex items-center gap-2">
+            <span>分类:</span> 
+            <Badge variant="neutral" className="py-0 h-5 text-xs">{node.category || '-'}</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <span>模板:</span>
+            <Badge variant="primary" className="py-0 h-5 text-xs">{node.template || '-'}</Badge>
+          </div>
+          <div className="flex items-center gap-2 max-w-[300px]">
+            <span>描述:</span>
+            <span className="truncate" title={node.description}>{node.description || '-'}</span>
+          </div>
+          {node.location && Object.entries(node.location).map(([k, v]) => (
+            <div key={k} className="flex items-center gap-1">
+              <span>{k}:</span>
+              <span className="font-mono text-gray-700">{v}</span>
+            </div>
+          ))}
+          {/* Default Properties - Hidden or simplified */}
+          {/* Additional Properties - Tooltip or Icon */}
+          {node.additionalProperties && Object.keys(node.additionalProperties).length > 0 && (
+             <div className="flex items-center gap-1" title={JSON.stringify(node.additionalProperties)}>
+                <Info className="w-3 h-3" />
+                <span>{Object.keys(node.additionalProperties).length} 个附加属性</span>
+             </div>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-6 pt-2 border-b border-gray-100 shrink-0">
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="px-6 pt-1 border-b border-gray-100 shrink-0">
           <Tabs 
             options={[
               { id: 'children', label: '子元素列表' },
@@ -100,9 +124,10 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
             activeId={activeTab}
             onChange={setActiveTab}
             variant="underline"
+            size="sm"
           />
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {activeTab === 'children' && (
             <ChildElementsTab 
               paginatedChildren={paginatedChildren}
@@ -155,83 +180,200 @@ const ChildElementsTab = ({
   currentPage, setCurrentPage, totalItems, pageSize
 }: ChildElementsTabProps) => {
   const totalPages = Math.ceil(totalItems / pageSize);
+  const emptyRows = Math.max(0, pageSize - paginatedChildren.length);
+
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.row-action-menu')) {
+        setOpenMenuId(null);
+      }
+    };
+
+    // Close menu on ESC key
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscKey);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, []);
+
+  const handleMenuToggle = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenMenuId(prev => prev === id ? null : id);
+  };
 
   return (
     <div className="p-6 flex flex-col h-full overflow-hidden">
       {/* Toolbar */}
-      <div className="flex gap-2 mb-4 shrink-0">
+      <div className="flex gap-2 mb-3 shrink-0 items-center">
         <div className="w-48">
           <Input 
             value={searchKeyword}
             onChange={setSearchKeyword}
             placeholder="关键字搜索..." 
-            size="sm"
-            icon={<Search className="w-4 h-4" />}
+            size="xs"
+            className="h-8 text-xs"
+            icon={<Search className="w-3.5 h-3.5" />}
           />
         </div>
-        <div className="w-32">
+        <div className="w-28">
           <Select 
             value={categoryFilter} 
             onChange={setCategoryFilter} 
-            size="sm"
+            size="xs"
+            className="h-8 text-xs"
             options={[{value: '', label: '全部分类'}, ...availableCategories.map(c => ({value: c, label: c}))]} 
           />
         </div>
-        <div className="w-32">
+        <div className="w-28">
           <Select 
             value={templateFilter} 
             onChange={setTemplateFilter} 
-            size="sm"
+            size="xs"
+            className="h-8 text-xs"
             options={[{value: '', label: '全部模板'}, ...availableTemplates.map(t => ({value: t, label: t}))]} 
           />
         </div>
       </div>
       {/* Table */}
-      <div className="flex-1 overflow-auto border border-gray-200 rounded-lg custom-scrollbar">
-        <table className="w-full text-sm text-left whitespace-nowrap">
-          <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        <TableContainer className="h-full">
+          <TableHeader>
             <tr>
-              <th className="px-4 py-3 font-medium text-gray-500">名称</th>
-              <th className="px-4 py-3 font-medium text-gray-500">路径</th>
-              <th className="px-4 py-3 font-medium text-gray-500">分类</th>
-              <th className="px-4 py-3 font-medium text-gray-500">引用类型</th>
-              <th className="px-4 py-3 font-medium text-gray-500">描述</th>
-              <th className="px-4 py-3 font-medium text-gray-500">模板</th>
-              <th className="px-4 py-3 font-medium text-gray-500">附加属性(动态)</th>
-              <th className="px-4 py-3 font-medium text-gray-500 text-right">操作</th>
+              <TableHead className="bg-gray-50/80 sticky top-0 z-10 whitespace-nowrap pl-6">名称</TableHead>
+              <TableHead className="bg-gray-50/80 sticky top-0 z-10 whitespace-nowrap">路径</TableHead>
+              <TableHead className="bg-gray-50/80 sticky top-0 z-10 whitespace-nowrap">分类</TableHead>
+              <TableHead className="bg-gray-50/80 sticky top-0 z-10 whitespace-nowrap">引用类型</TableHead>
+              <TableHead className="bg-gray-50/80 sticky top-0 z-10 whitespace-nowrap">描述</TableHead>
+              <TableHead className="bg-gray-50/80 sticky top-0 z-10 whitespace-nowrap">模板</TableHead>
+              <TableHead className="bg-gray-50/80 sticky top-0 z-10 whitespace-nowrap">附加属性</TableHead>
+              <TableHead className="text-right bg-gray-50/80 sticky top-0 right-0 z-20 whitespace-nowrap pr-6 shadow-[calc(-20px)_0_20px_-10px_rgba(0,0,0,0.05)]">操作</TableHead>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {paginatedChildren.length > 0 ? paginatedChildren.map(child => (
-              <tr key={child.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 font-medium text-gray-900">{child.label}</td>
-                <td className="px-4 py-3 font-mono text-xs text-gray-500">{child.path}</td>
-                <td className="px-4 py-3">{child.category || '-'}</td>
-                <td className="px-4 py-3 text-gray-500">直接子节点</td>
-                <td className="px-4 py-3 text-gray-500 truncate max-w-[150px]">{child.description || '-'}</td>
-                <td className="px-4 py-3 text-gray-500">{child.template || '-'}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">
-                  {child.additionalProperties ? Object.entries(child.additionalProperties).map(([k, v]) => (
-                    <div key={k} className="truncate max-w-[120px]" title={`${k}: ${v}`}>{k}: {v}</div>
-                  )) : '-'}
-                </td>
-                <td className="px-4 py-3 flex justify-end gap-1">
-                  <Button variant="ghost" size="sm" isIconOnly title="详情" onClick={() => onAction('detail', child.id)}><Info className="w-4 h-4 text-gray-400 hover:text-indigo-600" /></Button>
-                  <Button variant="ghost" size="sm" isIconOnly title="编辑" onClick={() => onAction('edit', child.id)}><Edit2 className="w-4 h-4 text-gray-400 hover:text-indigo-600" /></Button>
-                  <Button variant="ghost" size="sm" isIconOnly title="复制" onClick={() => onAction('copy', child.id)}><Copy className="w-4 h-4 text-gray-400 hover:text-indigo-600" /></Button>
-                  <Button variant="ghost" size="sm" isIconOnly title="上移" onClick={() => onAction('up', child.id)}><ArrowUp className="w-4 h-4 text-gray-400 hover:text-indigo-600" /></Button>
-                  <Button variant="ghost" size="sm" isIconOnly title="下移" onClick={() => onAction('down', child.id)}><ArrowDown className="w-4 h-4 text-gray-400 hover:text-indigo-600" /></Button>
-                  <Button variant="ghost" size="sm" isIconOnly title="移顶" onClick={() => onAction('top', child.id)}><ArrowUpToLine className="w-4 h-4 text-gray-400 hover:text-indigo-600" /></Button>
-                  <Button variant="ghost" size="sm" isIconOnly title="删除" onClick={() => onAction('delete', child.id)}><Trash2 className="w-4 h-4 text-gray-400 hover:text-red-600" /></Button>
-                </td>
-              </tr>
+          </TableHeader>
+          <TableBody>
+            {paginatedChildren.length > 0 ? paginatedChildren.map((child, index) => (
+              <TableRow key={child.id} index={index}>
+                <TableCell className="font-medium text-gray-900 pl-6">
+                  <div className="flex items-center gap-2">
+                    <FolderTree className="w-4 h-4 text-indigo-500 opacity-70" />
+                    {child.label}
+                  </div>
+                </TableCell>
+                <TableCell className="font-mono text-xs text-gray-500">{child.path}</TableCell>
+                <TableCell>
+                  {child.category ? (
+                    <Badge variant="neutral" className="py-0 h-5 text-xs font-normal gap-1">
+                      <Tag className="w-3 h-3 opacity-50" />
+                      {child.category}
+                    </Badge>
+                  ) : '-'}
+                </TableCell>
+                <TableCell className="text-gray-500">
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <Link2 className="w-3 h-3 opacity-50" />
+                    直接子节点
+                  </div>
+                </TableCell>
+                <TableCell className="text-gray-500 truncate max-w-[150px]" title={child.description || ''}>{child.description || '-'}</TableCell>
+                <TableCell className="text-gray-500">
+                  {child.template ? (
+                    <Badge variant="primary" className="py-0 h-5 text-xs font-normal bg-indigo-50 text-indigo-600 border-indigo-100 gap-1">
+                      <FileText className="w-3 h-3 opacity-50" />
+                      {child.template}
+                    </Badge>
+                  ) : '-'}
+                </TableCell>
+                <TableCell className="text-gray-500 text-xs">
+                  {child.additionalProperties ? (
+                    <div className="flex items-center gap-1 text-gray-400">
+                      <Info className="w-3 h-3" />
+                      <span>{Object.keys(child.additionalProperties).length} 项</span>
+                    </div>
+                  ) : '-'}
+                </TableCell>
+                <TableCell className="text-right sticky right-0 bg-white/95 backdrop-blur-sm z-10 pr-6 group-hover:bg-gray-50/50 transition-colors border-l border-transparent group-hover:border-primary-100 shadow-[calc(-20px)_0_20px_-10px_rgba(0,0,0,0.05)]">
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="sm" isIconOnly title="详情" aria-label="查看详情" onClick={() => onAction('detail', child.id)}><Info className="w-4 h-4 text-gray-400 hover:text-indigo-600" /></Button>
+                    <Button variant="ghost" size="sm" isIconOnly title="编辑" aria-label="编辑元素" onClick={() => onAction('edit', child.id)}><Edit2 className="w-4 h-4 text-gray-400 hover:text-indigo-600" /></Button>
+                    <Button variant="ghost" size="sm" isIconOnly title="复制" aria-label="复制元素" onClick={() => onAction('copy', child.id)}><Copy className="w-4 h-4 text-gray-400 hover:text-indigo-600" /></Button>
+                    <div className="relative row-action-menu">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        isIconOnly 
+                        title="更多操作"
+                        aria-label="更多操作"
+                        aria-haspopup="true"
+                        aria-expanded={openMenuId === child.id}
+                        className={openMenuId === child.id ? 'bg-gray-100 text-indigo-600' : ''}
+                        onClick={(e) => handleMenuToggle(child.id, e)}
+                      >
+                        <ArrowDown className={`w-4 h-4 transition-transform duration-200 ${openMenuId === child.id ? 'rotate-180 text-indigo-600' : 'text-gray-400 hover:text-indigo-600'}`} />
+                      </Button>
+                      <AnimatePresence>
+                        {openMenuId === child.id && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            transition={{ duration: 0.1 }}
+                            className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50 origin-top-right focus:outline-none"
+                            role="menu"
+                            aria-orientation="vertical"
+                            aria-labelledby="options-menu"
+                          >
+                            <button role="menuitem" className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-2 transition-colors focus:bg-gray-50 focus:outline-none" onClick={() => { onAction('up', child.id); setOpenMenuId(null); }}>
+                              <ArrowUp className="w-3 h-3" /> 上移
+                            </button>
+                            <button role="menuitem" className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-2 transition-colors focus:bg-gray-50 focus:outline-none" onClick={() => { onAction('down', child.id); setOpenMenuId(null); }}>
+                              <ArrowDown className="w-3 h-3" /> 下移
+                            </button>
+                            <button role="menuitem" className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-2 transition-colors focus:bg-gray-50 focus:outline-none" onClick={() => { onAction('top', child.id); setOpenMenuId(null); }}>
+                              <ArrowUpToLine className="w-3 h-3" /> 移顶
+                            </button>
+                            <div className="h-px bg-gray-100 my-1" role="separator" />
+                            <button role="menuitem" className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors focus:bg-red-50 focus:outline-none" onClick={() => { onAction('delete', child.id); setOpenMenuId(null); }}>
+                              <Trash2 className="w-3 h-3" /> 删除
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
             )) : (
-              <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">暂无子元素</td>
-              </tr>
+              <TableRow>
+                <TableCell className="text-center text-gray-400 py-8" colSpan={8}>暂无子元素</TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
+            {/* Empty Rows Padding */}
+            {paginatedChildren.length > 0 && Array.from({ length: emptyRows }).map((_, index) => (
+              <TableRow key={`empty-${index}`}>
+                 <TableCell className="text-transparent select-none">&nbsp;</TableCell>
+                 <TableCell className="text-transparent select-none">&nbsp;</TableCell>
+                 <TableCell className="text-transparent select-none">&nbsp;</TableCell>
+                 <TableCell className="text-transparent select-none">&nbsp;</TableCell>
+                 <TableCell className="text-transparent select-none">&nbsp;</TableCell>
+                 <TableCell className="text-transparent select-none">&nbsp;</TableCell>
+                 <TableCell className="text-transparent select-none">&nbsp;</TableCell>
+                 <TableCell className="text-transparent select-none sticky right-0 bg-white/50 backdrop-blur-sm border-l border-transparent">&nbsp;</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </TableContainer>
       </div>
       {/* Pagination */}
       <div className="mt-4 flex justify-between items-center text-sm text-gray-500 shrink-0">
