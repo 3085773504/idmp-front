@@ -55,10 +55,19 @@ const NavigationLayout: React.FC<NavigationLayoutProps> = ({
         {tabs}
 
         {/* 中间内容区 */}
-        <div className="flex-1 overflow-hidden relative z-10 flex flex-col min-h-0">
-          <div className={`flex-1 flex flex-col min-h-0 ${layoutMode === 'bottom' ? 'pb-[calc(80px+env(safe-area-inset-bottom))]' : ''}`}>
-            {children}
-          </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
+          {children}
+          {/* Bottom padding for bottom nav mode to prevent content overlap */}
+          <AnimatePresence>
+            {layoutMode === 'bottom' && (
+              <motion.div 
+                initial={{ height: 0 }}
+                animate={{ height: 96 }} // 24rem = 96px
+                exit={{ height: 0 }}
+                transition={{ duration: 0.3 }}
+              />
+            )}
+          </AnimatePresence>
         </div>
       </main>
 

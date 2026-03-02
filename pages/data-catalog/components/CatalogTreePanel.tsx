@@ -1,6 +1,5 @@
 import React from 'react';
 import { FolderTree, Plus, Search, RefreshCw } from 'lucide-react';
-import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Select from '@/components/ui/Select';
 import Input from '@/components/ui/Input';
@@ -26,8 +25,8 @@ export const CatalogTreePanel: React.FC<CatalogTreePanelProps> = ({
   handleRefresh, filteredTreeData, selectedNode, handleSelectNode, onCreateElement, expandedIds
 }) => {
   return (
-    <Card className="w-full h-full flex flex-col p-0 overflow-hidden shadow-none border-0 rounded-none bg-transparent">
-      <div className="p-4 border-b border-gray-100 space-y-4 bg-white shrink-0">
+    <div className="w-full flex-1 flex flex-col p-0 shrink-0">
+      <div className="p-4 border-b border-gray-100 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-gray-900 flex items-center gap-2">
             <FolderTree className="w-5 h-5 text-indigo-600" />
@@ -43,8 +42,7 @@ export const CatalogTreePanel: React.FC<CatalogTreePanelProps> = ({
             <Select 
               value={dimension} 
               onChange={(val) => setDimension(val as Dimension)}
-              size="xs"
-              className="h-8 text-xs"
+              size="sm"
               options={[
                 { value: 'PHYSICAL', label: '物理维度' },
                 { value: 'FUNCTION', label: '功能维度' },
@@ -52,8 +50,8 @@ export const CatalogTreePanel: React.FC<CatalogTreePanelProps> = ({
               ]}
             />
           </div>
-          <Button variant="secondary" className="!w-8 !h-8 !min-h-0 !min-w-0 !p-0 rounded-md" isIconOnly onClick={handleRefresh}>
-            <RefreshCw className={`w-3.5 h-3.5 ${viewState === 'LOADING' ? 'animate-spin' : ''}`} />
+          <Button variant="secondary" className="!w-[36px] !h-[36px] !min-h-0 !min-w-0 !p-0" isIconOnly onClick={handleRefresh}>
+            <RefreshCw className={`w-4 h-4 ${viewState === 'LOADING' ? 'animate-spin' : ''}`} />
           </Button>
         </div>
 
@@ -62,14 +60,13 @@ export const CatalogTreePanel: React.FC<CatalogTreePanelProps> = ({
             value={categoryFilter}
             onChange={(val) => setCategoryFilter(val)}
             placeholder="按类别过滤..." 
-            size="xs"
-            className="h-8 text-xs"
-            icon={<Search className="w-3.5 h-3.5" />}
+            size="sm"
+            icon={<Search className="w-4 h-4" />}
           />
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 custom-scrollbar relative">
+      <div className="p-2 relative">
         {viewState === 'LOADING' ? (
           <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-10">
             <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
@@ -89,6 +86,6 @@ export const CatalogTreePanel: React.FC<CatalogTreePanelProps> = ({
           </div>
         )}
       </div>
-    </Card>
+    </div>
   );
 };

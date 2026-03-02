@@ -15,7 +15,7 @@ interface SelectProps {
   placeholder?: string;
   label?: string;
   className?: string;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder = "请选择...", label, className = "", size = "md" }) => {
@@ -24,14 +24,12 @@ const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder =
   const selectedOption = options?.find(opt => opt.value === value);
 
   const sizeClasses = {
-    xs: 'px-2 py-1 text-xs rounded-md min-h-[32px]',
     sm: 'px-3 py-2 text-sm rounded-lg min-h-[36px]',
     md: 'px-4 py-3 rounded-xl min-h-[48px]',
     lg: 'px-5 py-4 rounded-2xl min-h-[56px]',
   };
 
   const dropdownSizeClasses = {
-    xs: 'px-2 py-1.5 text-xs',
     sm: 'px-3 py-2 text-sm',
     md: 'px-4 py-3 text-sm',
     lg: 'px-5 py-4 text-base',

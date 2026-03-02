@@ -22,6 +22,27 @@ export interface ElementNode extends TreeNode {
     totalAnalysis: number;
   };
   children?: ElementNode[];
+  
+  // New fields for P0/P1 features
+  dataSourceBinding?: {
+    type: 'IoTDB' | 'InfluxDB';
+    sourcePath: string;
+    status: 'BOUND' | 'UNBOUND' | 'ERROR';
+  };
+  referenceType?: 'DIRECT' | 'CROSS_DIMENSION';
+  referenceSource?: string;
+  relations?: {
+    upstream: string[];
+    downstream: string[];
+    impactCount: number;
+  };
+  info?: {
+    documents: { name: string; url: string }[];
+    notes: string;
+    security: { level: string; lastAudit: string; encrypted: boolean };
+    history: { version: string; date: string }[];
+  };
+  templateAppliedAt?: string;
 }
 
 export interface Property {
@@ -53,6 +74,14 @@ export interface Property {
   additionalProperties?: Record<string, string>;
   isFile?: boolean;
   fileUrl?: string;
+
+  // New fields for P0/P1 features
+  propertyType?: 'INDICATOR' | 'TAG' | 'FORMULA';
+  unit?: string;
+  formula?: string;
+  sourcePath?: string;
+  unitConversionStrategy?: string;
+  formulaResult?: string;
 }
 
 export interface CatalogProvider {

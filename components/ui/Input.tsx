@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BaseProps } from '../../types';
@@ -10,7 +11,7 @@ interface InputProps extends BaseProps, Omit<React.InputHTMLAttributes<HTMLInput
   shake?: boolean;
   value: string;
   onChange: (value: string) => void;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const Input: React.FC<InputProps> = ({ 
@@ -56,57 +57,49 @@ const Input: React.FC<InputProps> = ({
   const characters = value.split('');
 
   const sizeClasses = {
-    xs: 'h-8 text-xs rounded-md',
     sm: 'h-9 text-sm rounded-lg',
     md: 'h-14 text-base rounded-2xl',
     lg: 'h-16 text-lg rounded-2xl',
   };
 
   const iconSizeClasses = {
-    xs: 'left-2.5',
     sm: 'left-3',
     md: 'left-4',
     lg: 'left-5',
   };
 
   const paddingLeftClasses = {
-    xs: 'pl-8',
     sm: 'pl-9',
     md: 'pl-11',
     lg: 'pl-12',
   };
 
   const paddingRightClasses = {
-    xs: 'pr-8',
     sm: 'pr-9',
     md: 'pr-12',
     lg: 'pr-14',
   };
 
   const defaultPaddingLeft = {
-    xs: 'pl-2.5',
     sm: 'pl-3',
     md: 'pl-4',
     lg: 'pl-5',
   };
 
   const defaultPaddingRight = {
-    xs: 'pr-2.5',
     sm: 'pr-3',
     md: 'pr-4',
     lg: 'pr-5',
   };
 
   const textSizeClasses = {
-    xs: 'text-xs',
     sm: 'text-sm',
     md: 'text-base',
     lg: 'text-lg',
   };
 
   return (
-    <div className={`relative ${className}`}>
-      {label && <label htmlFor={id} className="block text-sm font-semibold text-gray-700 mb-2 ml-1">{label}</label>}
+    <div className={`w-full ${className}`}>
       <motion.div 
         className="relative group"
         initial={false}
@@ -118,7 +111,7 @@ const Input: React.FC<InputProps> = ({
       >
         {/* 背景与边框 */}
         <motion.div
-          className={`absolute inset-0 pointer-events-none ${size === 'xs' ? 'rounded-md' : size === 'sm' ? 'rounded-lg' : 'rounded-2xl'}`}
+          className={`absolute inset-0 pointer-events-none ${size === 'sm' ? 'rounded-lg' : 'rounded-2xl'}`}
           initial={false}
           animate={{
             backgroundColor: isFocused ? '#ffffff' : '#f8fafc',
@@ -231,15 +224,12 @@ const Input: React.FC<InputProps> = ({
               font-bold relative z-20 ${textSizeClasses[size]}
               ${icon ? paddingLeftClasses[size] : defaultPaddingLeft[size]}
               ${rightElement ? paddingRightClasses[size] : defaultPaddingRight[size]}
-              focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-opacity-50
             `}
             style={{ 
                 textShadow: '0 0 0 transparent', // 隐藏真实文字
                 WebkitTextFillColor: 'transparent' // 兼容性隐藏
             }}
             autoComplete="off"
-            aria-invalid={!!error}
-            aria-describedby={error ? `${id}-error` : undefined}
             {...props}
           />
 
@@ -260,8 +250,6 @@ const Input: React.FC<InputProps> = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             className="mt-2 ml-1"
-            id={`${id}-error`}
-            role="alert"
           >
             <p className="text-[13px] text-red-500 font-bold flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500"/>

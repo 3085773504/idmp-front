@@ -84,16 +84,9 @@ export function useCatalogState(provider: CatalogProvider = mockCatalogProvider)
 
   // Helper: Generate slug from name
   const generateSlug = (name: string): string => {
-    if (!name || !name.trim()) {
-      return `node-${Date.now()}`;
-    }
-    // Allow Chinese characters, numbers, letters, underscores and hyphens
-    // Replace whitespace with hyphens
-    const slug = name.trim()
+    return name.trim().toLowerCase()
       .replace(/\s+/g, '-')
-      .replace(/[^a-zA-Z0-9\u4e00-\u9fa5-_]/g, '');
-      
-    return slug || `node-${Date.now()}`;
+      .replace(/[^a-z0-9-_]/g, '');
   };
 
   // Helper: Generate unique path
@@ -220,6 +213,61 @@ export function useCatalogState(provider: CatalogProvider = mockCatalogProvider)
     setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
   }, [selectedNode]);
 
+  const updateElementMetadata = useCallback((id: string, data: Partial<ElementNode>) => {
+    setTreeData(prev => updateTree(prev, id, node => ({ ...node, ...data })));
+    if (selectedNode?.id === id) {
+      setSelectedNode(prev => prev ? { ...prev, ...data } : null);
+    }
+  }, [selectedNode]);
+
+  const updateDataSourceBinding = useCallback((id: string, bindingData: ElementNode['dataSourceBinding']) => {
+    updateElementMetadata(id, { dataSourceBinding: bindingData });
+  }, [updateElementMetadata]);
+
+  const applyTemplate = useCallback((id: string, templateId: string) => {
+    const templateAppliedAt = new Date().toISOString();
+    updateElementMetadata(id, { template: templateId, templateAppliedAt });
+  }, [updateElementMetadata]);
+
+  const createProperty = useCallback((elementId: string, property: Property) => {
+    setPropertiesMap(prev => {
+      const existing = prev[elementId] || [];
+      return { ...prev, [elementId]: [...existing, property] };
+    });
+  }, []);
+
+  const addDimensionReference = useCallback((elementId: string, referenceData: any) => {
+    // Mock adding a reference child to the current element
+    setTreeData(prev => updateTree(prev, elementId, node => {
+      const newChild: ElementNode = {
+        id: `ref-${Date.now()}`,
+        label: referenceData.label || 'New Reference',
+        type: 'DEVICE',
+        path: `${node.path}.${referenceData.label || 'ref'}`,
+        referenceType: 'CROSS_DIMENSION',
+        referenceSource: referenceData.sourcePath || 'Other Dimension',
+        children: []
+      };
+      return { ...node, children: [...(node.children || []), newChild] };
+    }));
+    
+    if (selectedNode?.id === elementId) {
+      setSelectedNode(prev => {
+        if (!prev) return prev;
+        const newChild: ElementNode = {
+          id: `ref-${Date.now()}`,
+          label: referenceData.label || 'New Reference',
+          type: 'DEVICE',
+          path: `${prev.path}.${referenceData.label || 'ref'}`,
+          referenceType: 'CROSS_DIMENSION',
+          referenceSource: referenceData.sourcePath || 'Other Dimension',
+          children: []
+        };
+        return { ...prev, children: [...(prev.children || []), newChild] };
+      });
+    }
+  }, [selectedNode]);
+
   return {
     dimension,
     setDimension,
@@ -259,6 +307,11 @@ export function useCatalogState(provider: CatalogProvider = mockCatalogProvider)
     updatePathRecursively,
     getBreadcrumbs,
     generateSlug,
-    generateUniquePath
+    generateUniquePath,
+    updateElementMetadata,
+    updateDataSourceBinding,
+    applyTemplate,
+    createProperty,
+    addDimensionReference
   };
 }
