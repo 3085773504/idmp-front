@@ -606,13 +606,13 @@ const RelationsTab = ({ node }: { node: ElementNode }) => {
 };
 
 const InfoTab = ({ breadcrumbs, node }: { breadcrumbs: ElementNode[], node: ElementNode }) => {
-  const info = node.info || {};
+  const info = node.info;
 
   return (
     <div className="p-6 space-y-6">
       <Card className="p-4">
         <h3 className="font-bold mb-4 flex items-center gap-2 text-gray-900"><FileTextIcon className="w-4 h-4" /> 关联文档</h3>
-        {info.documents && info.documents.length > 0 ? (
+        {info?.documents && info.documents.length > 0 ? (
           <ul className="space-y-2 text-sm">
             {info.documents.map((doc, i) => (
               <li key={i}><a href={doc.url} className="text-indigo-600 hover:underline flex items-center gap-1"><ExternalLink className="w-3 h-3" /> {doc.name}</a></li>
@@ -624,7 +624,7 @@ const InfoTab = ({ breadcrumbs, node }: { breadcrumbs: ElementNode[], node: Elem
       </Card>
       <Card className="p-4">
         <h3 className="font-bold mb-4 flex items-center gap-2 text-gray-900"><Info className="w-4 h-4 text-blue-500" /> 注释</h3>
-        {info.notes ? (
+        {info?.notes ? (
           <p className="text-sm text-gray-600">{info.notes}</p>
         ) : (
           <p className="text-sm text-gray-400 italic">暂无注释信息</p>
@@ -644,7 +644,7 @@ const InfoTab = ({ breadcrumbs, node }: { breadcrumbs: ElementNode[], node: Elem
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="p-4 bg-gray-50 border-dashed">
           <h3 className="font-bold mb-2 flex items-center gap-2 text-gray-500"><Shield className="w-4 h-4" /> 安全配置</h3>
-          {info.security ? (
+          {info?.security ? (
             <ul className="text-xs text-gray-500 space-y-1">
               <li className="flex justify-between"><span>访问级别:</span> <span className="font-medium text-gray-700">{info.security.level}</span></li>
               <li className="flex justify-between"><span>最后审计:</span> <span className="font-medium text-gray-700">{info.security.lastAudit}</span></li>
@@ -656,7 +656,7 @@ const InfoTab = ({ breadcrumbs, node }: { breadcrumbs: ElementNode[], node: Elem
         </Card>
         <Card className="p-4 bg-gray-50 border-dashed">
           <h3 className="font-bold mb-2 flex items-center gap-2 text-gray-500"><History className="w-4 h-4" /> 版本历史</h3>
-          {info.history && info.history.length > 0 ? (
+          {info?.history && info.history.length > 0 ? (
             <ul className="text-xs text-gray-500 space-y-1">
               {info.history.map((h, i) => (
                 <li key={i} className="flex justify-between"><span>{h.version}</span> <span className="text-gray-400">{h.date}</span></li>

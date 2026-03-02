@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { AlertCircle, FolderTree } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -229,7 +229,7 @@ export default function DataCatalog() {
       const updatedNode = { ...selectedNode, children };
       setSelectedNode(updatedNode);
       setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
-      
+      toast.success('节点复制成功');
     } else if (action === 'up') {
       if (idx > 0) {
         const children = [...selectedNode.children];
@@ -237,6 +237,9 @@ export default function DataCatalog() {
         const updatedNode = { ...selectedNode, children };
         setSelectedNode(updatedNode);
         setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+        toast.success('节点上移成功');
+      } else {
+        toast.info('节点已在最顶部');
       }
     } else if (action === 'down') {
       if (idx < selectedNode.children.length - 1) {
@@ -245,6 +248,9 @@ export default function DataCatalog() {
         const updatedNode = { ...selectedNode, children };
         setSelectedNode(updatedNode);
         setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+        toast.success('节点下移成功');
+      } else {
+        toast.info('节点已在最底部');
       }
     } else if (action === 'top') {
       if (idx > 0) {
@@ -254,6 +260,9 @@ export default function DataCatalog() {
         const updatedNode = { ...selectedNode, children };
         setSelectedNode(updatedNode);
         setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+        toast.success('节点已移至顶部');
+      } else {
+        toast.info('节点已在最顶部');
       }
     } else if (action === 'delete') {
       openModal('DELETE_CHILD', { idx });
