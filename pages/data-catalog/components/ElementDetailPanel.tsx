@@ -20,6 +20,7 @@ import {
   TableHead, 
   TableCell 
 } from '@/components/ui/Table';
+import { useToast } from '@/components/ui/Toast';
 import { ElementNode, Property } from '../types';
 
 interface ElementDetailPanelProps {
@@ -69,6 +70,7 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
   availableCategories, availableTemplates,
   onUpdateMetadata, onUpdateDataSource, onApplyTemplate, onCreateProperty, onAddReference
 }) => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('children');
   
   // Metadata Edit State
@@ -104,9 +106,12 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
   const handleSaveMetadata = () => {
     let parsedProps = {};
     try {
-      parsedProps = JSON.parse(editForm.additionalProperties);
+      if (editForm.additionalProperties.trim()) {
+        parsedProps = JSON.parse(editForm.additionalProperties);
+      }
     } catch (e) {
-      // Ignore invalid JSON for now or show toast
+      toast.error('附加属性必须是有效的JSON格式');
+      return;
     }
     onUpdateMetadata?.({
       description: editForm.description,
@@ -114,15 +119,21 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
       additionalProperties: parsedProps
     });
     setIsEditingMetadata(false);
+    toast.success('基本信息已保存');
   };
 
   const handleSaveDataSource = () => {
+    if (!dsForm.sourcePath.trim()) {
+      toast.error('测点路径不能为空');
+      return;
+    }
     onUpdateDataSource?.({
       type: dsForm.type as 'IoTDB' | 'InfluxDB',
       sourcePath: dsForm.sourcePath,
       status: 'BOUND'
     });
     setIsEditingDataSource(false);
+    toast.success('数据源绑定已保存');
   };
 
   const handleUnbindDataSource = () => {
@@ -133,6 +144,7 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
     });
     setDsForm(prev => ({ ...prev, sourcePath: '' }));
     setIsEditingDataSource(false);
+    toast.success('数据源已解绑');
   };
 
   return (
@@ -140,7 +152,7 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
       {/* Top Actions */}
       <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" isIconOnly onClick={onBack}><ChevronLeft className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="sm" isIconOnly onClick={onBack} aria-label="返回"><ChevronLeft className="w-4 h-4" /></Button>
           <h2 className="text-xl font-bold text-gray-900">{node.label}</h2>
           {node.isFavorite && <Star className="w-4 h-4 text-yellow-400 fill-current" />}
         </div>
@@ -197,7 +209,7 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="space-y-1">
                 <label className="text-xs text-gray-500">分类</label>
-                <Input size="sm" value={editForm.category} onChange={val => setEditForm(prev => ({...prev, category: val}))} />
+                <Input size="sm" value={editForm.category} onChange={val => setEditForm(prev => ({...prev, category: val}))} autoFocus />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-gray-500">描述</label>
@@ -263,6 +275,7 @@ export const ElementDetailPanel: React.FC<ElementDetailPanelProps> = ({
                   value={dsForm.type} 
                   onChange={val => setDsForm(prev => ({...prev, type: val}))}
                   options={[{label: 'IoTDB', value: 'IoTDB'}, {label: 'InfluxDB', value: 'InfluxDB'}]}
+                  autoFocus
                 />
               </div>
               <div className="space-y-1 flex-1">
@@ -429,12 +442,13 @@ const ChildElementsTab = ({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('detail', child.id)}><Info className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('edit', child.id)}><Edit2 className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('copy', child.id)}><Copy className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('up', child.id)}><ArrowUp className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('down', child.id)}><ArrowDown className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" isIconOnly className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => onAction('delete', child.id)}><Trash2 className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('detail', child.id)} aria-label="查看详情"><Info className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('edit', child.id)} aria-label="编辑"><Edit2 className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('copy', child.id)} aria-label="复制"><Copy className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('top', child.id)} aria-label="移顶"><ArrowUpToLine className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('up', child.id)} aria-label="上移"><ArrowUp className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('down', child.id)} aria-label="下移"><ArrowDown className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="sm" isIconOnly className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => onAction('delete', child.id)} aria-label="删除"><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -592,33 +606,29 @@ const RelationsTab = ({ node }: { node: ElementNode }) => {
 };
 
 const InfoTab = ({ breadcrumbs, node }: { breadcrumbs: ElementNode[], node: ElementNode }) => {
-  const info = node.info || {
-    documents: [
-      { name: '设备操作手册 v2.pdf', url: '#' },
-      { name: '维护记录_2024.xlsx', url: '#' }
-    ],
-    notes: '该设备于2024年1月进行过大修，更换了主轴轴承。目前运行状态良好，需注意定期检查润滑油位。',
-    security: { level: 'Level 3', lastAudit: '2024-02-15', encrypted: true },
-    history: [
-      { version: 'v2.1.0', date: '2024-01-10' },
-      { version: 'v2.0.5', date: '2023-12-05' },
-      { version: 'v1.9.8', date: '2023-11-20' }
-    ]
-  };
+  const info = node.info || {};
 
   return (
     <div className="p-6 space-y-6">
       <Card className="p-4">
         <h3 className="font-bold mb-4 flex items-center gap-2 text-gray-900"><FileTextIcon className="w-4 h-4" /> 关联文档</h3>
-        <ul className="space-y-2 text-sm">
-          {info.documents.map((doc, i) => (
-            <li key={i}><a href={doc.url} className="text-indigo-600 hover:underline flex items-center gap-1"><ExternalLink className="w-3 h-3" /> {doc.name}</a></li>
-          ))}
-        </ul>
+        {info.documents && info.documents.length > 0 ? (
+          <ul className="space-y-2 text-sm">
+            {info.documents.map((doc, i) => (
+              <li key={i}><a href={doc.url} className="text-indigo-600 hover:underline flex items-center gap-1"><ExternalLink className="w-3 h-3" /> {doc.name}</a></li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-gray-400 italic">暂无关联文档</p>
+        )}
       </Card>
       <Card className="p-4">
         <h3 className="font-bold mb-4 flex items-center gap-2 text-gray-900"><Info className="w-4 h-4 text-blue-500" /> 注释</h3>
-        <p className="text-sm text-gray-600">{info.notes}</p>
+        {info.notes ? (
+          <p className="text-sm text-gray-600">{info.notes}</p>
+        ) : (
+          <p className="text-sm text-gray-400 italic">暂无注释信息</p>
+        )}
       </Card>
       <Card className="p-4">
         <h3 className="font-bold mb-4 flex items-center gap-2 text-gray-900"><FolderTree className="w-4 h-4 text-emerald-500" /> 父链</h3>
@@ -634,19 +644,27 @@ const InfoTab = ({ breadcrumbs, node }: { breadcrumbs: ElementNode[], node: Elem
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="p-4 bg-gray-50 border-dashed">
           <h3 className="font-bold mb-2 flex items-center gap-2 text-gray-500"><Shield className="w-4 h-4" /> 安全配置</h3>
-          <ul className="text-xs text-gray-500 space-y-1">
-            <li className="flex justify-between"><span>访问级别:</span> <span className="font-medium text-gray-700">{info.security.level}</span></li>
-            <li className="flex justify-between"><span>最后审计:</span> <span className="font-medium text-gray-700">{info.security.lastAudit}</span></li>
-            <li className="flex justify-between"><span>加密状态:</span> <span className={info.security.encrypted ? "text-green-600" : "text-gray-500"}>{info.security.encrypted ? '已启用' : '未启用'}</span></li>
-          </ul>
+          {info.security ? (
+            <ul className="text-xs text-gray-500 space-y-1">
+              <li className="flex justify-between"><span>访问级别:</span> <span className="font-medium text-gray-700">{info.security.level}</span></li>
+              <li className="flex justify-between"><span>最后审计:</span> <span className="font-medium text-gray-700">{info.security.lastAudit}</span></li>
+              <li className="flex justify-between"><span>加密状态:</span> <span className={info.security.encrypted ? "text-green-600" : "text-gray-500"}>{info.security.encrypted ? '已启用' : '未启用'}</span></li>
+            </ul>
+          ) : (
+            <p className="text-xs text-gray-400 italic">暂无安全配置</p>
+          )}
         </Card>
         <Card className="p-4 bg-gray-50 border-dashed">
           <h3 className="font-bold mb-2 flex items-center gap-2 text-gray-500"><History className="w-4 h-4" /> 版本历史</h3>
-          <ul className="text-xs text-gray-500 space-y-1">
-            {info.history.map((h, i) => (
-              <li key={i} className="flex justify-between"><span>{h.version}</span> <span className="text-gray-400">{h.date}</span></li>
-            ))}
-          </ul>
+          {info.history && info.history.length > 0 ? (
+            <ul className="text-xs text-gray-500 space-y-1">
+              {info.history.map((h, i) => (
+                <li key={i} className="flex justify-between"><span>{h.version}</span> <span className="text-gray-400">{h.date}</span></li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-gray-400 italic">暂无版本历史</p>
+          )}
         </Card>
       </div>
     </div>

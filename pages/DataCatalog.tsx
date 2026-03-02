@@ -13,8 +13,10 @@ import { PropertyDetailPanel } from '@/pages/data-catalog/components/PropertyDet
 import { ElementNode } from '@/pages/data-catalog/types';
 import { SmoothAreaChart, SpotlightBarChart } from '@/components/ui/Charts';
 import { TableContainer, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table';
+import { useToast } from '@/components/ui/Toast';
 
 export default function DataCatalog() {
+  const toast = useToast();
   const {
     dimension, setDimension,
     filteredTreeData, setTreeData,
@@ -76,18 +78,18 @@ export default function DataCatalog() {
         } else {
            setTreeData(prev => [...prev, newNode]);
         }
+        toast.success('节点创建成功');
       }
     } else if (type === 'EDIT_ELEMENT' && selectedNode) {
       if (modalInput.trim()) {
-        const parentPath = selectedNode.path.substring(0, selectedNode.path.lastIndexOf('.'));
-        const slug = generateSlug(modalInput);
-        // Find siblings (excluding self) to check uniqueness
-        // This is tricky without parent ref, but we can assume uniqueness check isn't strict for rename in this mock
-        // OR we can just generate path. 
-        // Let's just generate path. If collision happens, it happens (mock limitation without full tree traversal to find parent)
-        // Ideally we should find parent to check siblings.
+        const breadcrumbs = getBreadcrumbs(selectedNode.id);
+        const parentNode = breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 2] : null;
+        const parentPath = parentNode ? parentNode.path : 'root';
+        const siblings = parentNode ? (parentNode.children || []) : treeData;
+        const otherSiblings = siblings.filter(s => s.id !== selectedNode.id);
         
-        const newPath = `${parentPath}.${slug}`;
+        const slug = generateSlug(modalInput);
+        const newPath = generateUniquePath(parentPath, slug, otherSiblings);
         
         let updatedNode = { ...selectedNode, label: modalInput.trim(), path: newPath };
         
@@ -97,16 +99,19 @@ export default function DataCatalog() {
         
         setSelectedNode(updatedNode);
         setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+        toast.success('节点重命名成功');
       }
     } else if (type === 'DELETE_ELEMENT' && selectedNode) {
       setTreeData(prev => deleteFromTree(prev, selectedNode.id));
       setSelectedNode(null);
       setViewState('EMPTY');
+      toast.success('节点删除成功');
     } else if (type === 'ADD_TEMPLATE') {
         if (selectedTemplate) {
             if (selectedNode) {
                 applyTemplate(selectedNode.id, selectedTemplate);
-                setModalState({ type: 'INFO', payload: { message: `已成功应用模板: ${selectedTemplate}` } });
+                toast.success(`已成功应用模板: ${selectedTemplate}`);
+                setModalState({ type: null });
                 return;
             }
         }
@@ -116,7 +121,7 @@ export default function DataCatalog() {
                 id: `prop-${Date.now()}`,
                 name: propertyForm.name.trim(),
                 propertyType: propertyForm.type as any,
-                valueType: propertyForm.type === 'TAG' ? 'STRING' : 'DOUBLE',
+                valueType: propertyForm.type === 'TAG' ? 'TEXT' : 'DOUBLE',
                 path: `${selectedNode.path}.${generateSlug(propertyForm.name)}`,
                 referenceType: 'DIRECT',
             };
@@ -131,6 +136,7 @@ export default function DataCatalog() {
                 newProp.displayValue = '计算中...';
             }
             createProperty(selectedNode.id, newProp);
+            toast.success('属性创建成功');
         }
     } else if (type === 'ADD_REFERENCE' && selectedNode) {
         if (referenceForm.targetId) {
@@ -139,7 +145,8 @@ export default function DataCatalog() {
                 targetId: referenceForm.targetId,
                 referenceType: referenceForm.referenceType
             });
-            setModalState({ type: 'INFO', payload: { message: `已成功添加引用` } });
+            toast.success('已成功添加引用');
+            setModalState({ type: null });
             return;
         }
     }
@@ -151,6 +158,7 @@ export default function DataCatalog() {
           ...prev,
           [selectedNode.id]: (prev[selectedNode.id] || []).map(p => p.id === updatedProp.id ? updatedProp : p)
         }));
+        toast.success('属性重命名成功');
       }
     } else if (type === 'DELETE_PROPERTY' && selectedProperty && selectedNode) {
       setPropertiesMap(prev => ({
@@ -158,6 +166,7 @@ export default function DataCatalog() {
         [selectedNode.id]: (prev[selectedNode.id] || []).filter(p => p.id !== selectedProperty.id)
       }));
       handleBackToElement();
+      toast.success('属性删除成功');
     } else if (type === 'EDIT_CHILD' && selectedNode && selectedNode.children) {
       if (modalInput.trim()) {
         const children = [...selectedNode.children];
@@ -178,6 +187,7 @@ export default function DataCatalog() {
         const updatedNode = { ...selectedNode, children };
         setSelectedNode(updatedNode);
         setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+        toast.success('子元素重命名成功');
       }
     } else if (type === 'DELETE_CHILD' && selectedNode && selectedNode.children) {
       const children = [...selectedNode.children];
@@ -185,6 +195,7 @@ export default function DataCatalog() {
       const updatedNode = { ...selectedNode, children };
       setSelectedNode(updatedNode);
       setTreeData(prev => updateTree(prev, updatedNode.id, () => updatedNode));
+      toast.success('子元素删除成功');
     }
     setModalState({ type: null });
     setModalInput('');
@@ -267,6 +278,25 @@ export default function DataCatalog() {
         setModalInput(selectedNode.children[payload.idx].label);
     }
   };
+
+  const getAllNodes = useCallback((nodes: ElementNode[]): ElementNode[] => {
+    let all: ElementNode[] = [];
+    nodes.forEach(n => {
+      all.push(n);
+      if (n.children) {
+        all = all.concat(getAllNodes(n.children));
+      }
+    });
+    return all;
+  }, []);
+
+  const referenceOptions = useMemo(() => {
+    if (modalState.type !== 'ADD_REFERENCE' || !selectedNode) return [];
+    const allNodes = getAllNodes(treeData);
+    return allNodes
+      .filter(n => n.id !== selectedNode.id)
+      .map(n => ({ value: n.id, label: `${n.label} (${n.path})` }));
+  }, [treeData, selectedNode, modalState.type, getAllNodes]);
 
   const [treeWidth, setTreeWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
@@ -478,6 +508,7 @@ export default function DataCatalog() {
                         { value: '传感器模板', label: '传感器模板' }
                     ]}
                     placeholder="请选择模板..."
+                    autoFocus
                 />
                 {selectedTemplate && (
                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm text-gray-600">
@@ -491,7 +522,7 @@ export default function DataCatalog() {
              <div className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-xs text-gray-500">属性名称</label>
-                  <Input size="sm" value={propertyForm.name} onChange={val => setPropertyForm(prev => ({...prev, name: val}))} placeholder="输入属性名称" />
+                  <Input size="sm" value={propertyForm.name} onChange={val => setPropertyForm(prev => ({...prev, name: val}))} placeholder="输入属性名称" autoFocus />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs text-gray-500">属性类型</label>
@@ -535,8 +566,15 @@ export default function DataCatalog() {
           {modalState.type === 'ADD_REFERENCE' && (
              <div className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500">目标节点 ID (Mock)</label>
-                  <Input size="sm" value={referenceForm.targetId} onChange={val => setReferenceForm(prev => ({...prev, targetId: val}))} placeholder="输入要引用的节点ID" />
+                  <label className="text-xs text-gray-500">目标节点</label>
+                  <Select 
+                    size="sm" 
+                    value={referenceForm.targetId} 
+                    onChange={val => setReferenceForm(prev => ({...prev, targetId: val}))} 
+                    options={referenceOptions}
+                    placeholder="请选择要引用的节点"
+                    autoFocus
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs text-gray-500">引用类型</label>

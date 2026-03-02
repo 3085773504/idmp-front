@@ -16,11 +16,13 @@ interface SelectProps {
   label?: string;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  autoFocus?: boolean;
 }
 
-const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder = "请选择...", label, className = "", size = "md" }) => {
+const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder = "请选择...", label, className = "", size = "md", autoFocus = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const selectedOption = options?.find(opt => opt.value === value);
 
   const sizeClasses = {
@@ -34,6 +36,12 @@ const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder =
     md: 'px-4 py-3 text-sm',
     lg: 'px-5 py-4 text-base',
   };
+
+  useEffect(() => {
+    if (autoFocus && buttonRef.current) {
+      buttonRef.current.focus();
+    }
+  }, [autoFocus]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -50,6 +58,7 @@ const Select: React.FC<SelectProps> = ({ options, value, onChange, placeholder =
       {label && <label className="block text-sm font-semibold text-gray-700 mb-2 ml-1">{label}</label>}
       
       <motion.button
+        ref={buttonRef}
         whileTap={{ scale: 0.985 }}
         onClick={() => setIsOpen(!isOpen)}
         className={`

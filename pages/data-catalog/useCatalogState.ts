@@ -84,9 +84,13 @@ export function useCatalogState(provider: CatalogProvider = mockCatalogProvider)
 
   // Helper: Generate slug from name
   const generateSlug = (name: string): string => {
-    return name.trim().toLowerCase()
+    let slug = name.trim().toLowerCase()
       .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-_]/g, '');
+      .replace(/[^\u4e00-\u9fa5a-z0-9-_]/g, '');
+    if (!slug) {
+      slug = `node-${Date.now()}`;
+    }
+    return slug;
   };
 
   // Helper: Generate unique path
