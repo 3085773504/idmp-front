@@ -441,7 +441,7 @@ const ChildElementsTab = ({
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex justify-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity">
                       <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('detail', child.id)} aria-label="查看详情"><Info className="w-4 h-4" /></Button>
                       <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('edit', child.id)} aria-label="编辑"><Edit2 className="w-4 h-4" /></Button>
                       <Button variant="ghost" size="sm" isIconOnly onClick={() => onAction('copy', child.id)} aria-label="复制"><Copy className="w-4 h-4" /></Button>
